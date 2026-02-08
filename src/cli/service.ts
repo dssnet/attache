@@ -15,10 +15,14 @@ export function renderServiceUnit(): string | null {
     return null;
   }
 
+  const DEFAULT_PATH = "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin";
+  const path = process.env.PATH ? `${process.env.PATH}:${DEFAULT_PATH}` : DEFAULT_PATH;
+
   const template = readFileSync(TEMPLATE_PATH, "utf-8");
   return template
     .replace("{{ATTACHE_PATH}}", attachePath)
-    .replace("{{PATH}}", process.env.PATH || "/usr/bin:/bin");
+    .replace("{{PATH}}", path)
+    .replace("{{HOME}}", homedir());
 }
 
 export function writeServiceUnit(unit: string): void {

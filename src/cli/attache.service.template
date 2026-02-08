@@ -8,6 +8,7 @@ ExecStart={{ATTACHE_PATH}} start
 Restart=always
 RestartSec=5
 Environment=PATH={{PATH}}
+Environment=HOME={{HOME}}
 
 [Install]
 WantedBy=default.target

@@ -779,14 +779,12 @@ export function createAgentTools(config: Config, ctx: AgentToolContext): ToolReg
             validateCommand(command, currentConfig);
             const workingDir = currentConfig.tools?.workingDir ? resolve(expandHome(currentConfig.tools.workingDir)) : undefined;
             const cwd = input.cwd ? resolve(input.cwd) : workingDir;
-            const proc = Bun.spawn(["sh", "-c", command], { cwd, stdout: "pipe", stderr: "pipe" });
-            const timeout = setTimeout(() => proc.kill(), 60_000);
-            const [stdout, stderr] = await Promise.all([
-              new Response(proc.stdout).text(),
-              new Response(proc.stderr).text(),
-            ]);
-            const exitCode = await proc.exited;
-            clearTimeout(timeout);
+            let shell = Bun.$`${{ raw: command }}`.quiet().nothrow();
+            if (cwd) shell = shell.cwd(cwd);
+            const result = await shell;
+            const stdout = result.stdout.toString();
+            const stderr = result.stderr.toString();
+            const exitCode = result.exitCode;
             return JSON.stringify({
               success: exitCode === 0,
               exitCode,
