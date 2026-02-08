@@ -35,7 +35,7 @@ function isOriginAllowed(req: Request, hostname: string, port: number): boolean 
 }
 
 // Main entry point for Attaché
-async function main() {
+export async function startServer() {
   const config = loadConfig();
 
   // Initialize MCP servers (each connection failure is isolated)
@@ -86,7 +86,10 @@ async function main() {
   console.log(`WebSocket available at ws://${server.hostname}:${server.port}/ws`);
 }
 
-main().catch((error) => {
-  console.error("Failed to start Attaché:", error);
-  process.exit(1);
-});
+// Only auto-start when run directly (not when imported by CLI)
+if (import.meta.main) {
+  startServer().catch((error: unknown) => {
+    console.error("Failed to start Attaché:", error);
+    process.exit(1);
+  });
+}

@@ -1,8 +1,11 @@
 import { Hono } from "hono";
 import { serveStatic } from "hono/bun";
-import { join } from "path";
+import { join, dirname } from "path";
 import { homedir } from "os";
+import { fileURLToPath } from "url";
 
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const DIST_DIR = join(__dirname, "../../dist");
 const DOWNLOADS_DIR = join(homedir(), ".attache", "downloads");
 
 export function createServer() {
@@ -20,8 +23,8 @@ export function createServer() {
     return c.body(await file.arrayBuffer());
   });
 
-  // Serve static files from dist directory
-  app.use("/*", serveStatic({ root: "./dist" }));
+  // Serve static files from dist directory (resolved relative to package, not CWD)
+  app.use("/*", serveStatic({ root: DIST_DIR }));
 
   return app;
 }
