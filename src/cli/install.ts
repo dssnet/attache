@@ -105,37 +105,15 @@ function configureProvider(): { name: string; config: ProviderConfig } {
 
 // --- Systemd service ---
 
-function installSystemdService(port: number): void {
-  const serviceDir = join(homedir(), ".config", "systemd", "user");
-  const servicePath = join(serviceDir, "attache.service");
+import { renderServiceUnit, writeServiceUnit, daemonReload, SERVICE_PATH } from "./service.ts";
 
-  // Find the attache binary
-  const bunPath = Bun.which("bun") || "/usr/bin/bun";
-  const attachePath = Bun.which("attache");
+function installSystemdService(): void {
+  const unit = renderServiceUnit();
+  if (!unit) return;
 
-  if (!attachePath) {
-    console.log("  Could not find attache in PATH. Skipping systemd service.");
-    return;
-  }
-
-  const unit = `[Unit]
-Description=Attache AI Assistant
-After=network.target
-
-[Service]
-Type=simple
-ExecStart=${attachePath} start
-Restart=on-failure
-RestartSec=5
-Environment=PATH=${process.env.PATH}
-
-[Install]
-WantedBy=default.target
-`;
-
-  mkdirSync(serviceDir, { recursive: true });
-  writeFileSync(servicePath, unit, "utf-8");
-  console.log(`  Service file written to ${servicePath}`);
+  writeServiceUnit(unit);
+  daemonReload();
+  console.log(`  Service file written to ${SERVICE_PATH}`);
 
   // Enable the service
   const enable = Bun.spawnSync(["systemctl", "--user", "enable", "attache"], {
@@ -240,7 +218,7 @@ if (process.platform === "linux") {
   console.log("\n  ── Step 5: Systemd Service ──────────────");
   const wantService = promptYesNo("Install as a systemd user service?", false);
   if (wantService) {
-    installSystemdService(port);
+    installSystemdService();
   }
 }
 

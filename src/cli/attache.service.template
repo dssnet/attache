@@ -1,0 +1,13 @@
+[Unit]
+Description=Attache AI Assistant
+After=network.target
+
+[Service]
+Type=simple
+ExecStart={{ATTACHE_PATH}} start
+Restart=always
+RestartSec=5
+Environment=PATH={{PATH}}
+
+[Install]
+WantedBy=default.target

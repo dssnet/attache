@@ -58,12 +58,20 @@ if (proc.exitCode !== 0) {
   process.exit(1);
 }
 
-// Restart systemd service if it exists
-import { existsSync } from "fs";
-import { homedir } from "os";
+// Update and restart systemd service if it exists
+import { serviceExists, renderServiceUnit, currentServiceUnit, writeServiceUnit, daemonReload } from "./service.ts";
 
-const servicePath = join(homedir(), ".config", "systemd", "user", "attache.service");
-if (existsSync(servicePath)) {
+if (serviceExists()) {
+  // Check if the service file needs updating
+  const newUnit = renderServiceUnit();
+  const oldUnit = currentServiceUnit();
+  if (newUnit && newUnit !== oldUnit) {
+    console.log("\n  Updating systemd service file...");
+    writeServiceUnit(newUnit);
+    daemonReload();
+    console.log("  Service file updated.");
+  }
+
   console.log("\n  Restarting service...");
   const restart = Bun.spawnSync(["systemctl", "--user", "restart", "attache"], {
     stdout: "inherit",
