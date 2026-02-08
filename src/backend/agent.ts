@@ -93,22 +93,20 @@ async function loadAgentsFromDisk() {
           const filePath = join(AGENTS_DIR, file);
           const content = await readFile(filePath, "utf-8");
           const agent: ActiveAgent = JSON.parse(content);
+          activeAgents.set(agent.id, agent);
+          console.log(`Loaded agent from disk: ${agent.id} (${agent.status})`);
+          if (agentEventCallback.onAgentStarted) {
+            agentEventCallback.onAgentStarted(agent.id, agent.task);
+          }
+          if (agentEventCallback.onAgentMessage) {
+            for (const message of agent.messages || []) {
+              agentEventCallback.onAgentMessage(agent.id, message);
+            }
+          }
           if (agent.status === "completed") {
-            activeAgents.set(agent.id, agent);
-            console.log(`Loaded agent from disk: ${agent.id}`);
-            if (agentEventCallback.onAgentStarted) {
-              agentEventCallback.onAgentStarted(agent.id, agent.task);
-            }
-            if (agentEventCallback.onAgentMessage) {
-              for (const message of agent.messages || []) {
-                agentEventCallback.onAgentMessage(agent.id, message);
-              }
-            }
             if (agentEventCallback.onAgentCompleted) {
               agentEventCallback.onAgentCompleted(agent.id, "");
             }
-          } else {
-            await deleteAgentFromDisk(agent.id);
           }
         } catch (error) {
           console.error(`Failed to load agent from ${file}:`, error);
@@ -124,6 +122,81 @@ async function loadAgentsFromDisk() {
 loadAgentsFromDisk().catch(error => {
   console.error("Failed to load agents:", error);
 });
+
+/**
+ * Resumes agents that were running when the server last stopped.
+ * Called after server startup with config available.
+ */
+export async function resumeRunningAgents(config: Config): Promise<void> {
+  const runningAgents = Array.from(activeAgents.values()).filter(
+    a => a.status === "running" && a.conversationHistory && a.systemPrompt
+  );
+
+  if (runningAgents.length === 0) return;
+
+  console.log(`Resuming ${runningAgents.length} interrupted agent(s)...`);
+
+  const providerName = config.models.default;
+  const provider = config.models.providers[providerName];
+  if (!provider) {
+    console.error("Cannot resume agents: default provider not found");
+    return;
+  }
+
+  for (const agent of runningAgents) {
+    console.log(`Resuming agent ${agent.id}: ${agent.task}`);
+
+    const resumeMsg = "⚡ Resumed after server restart";
+    agent.messages.push(resumeMsg);
+    agent.lastActivityTime = Date.now();
+    agent.incomingMessages = [];
+
+    if (agentEventCallback.onAgentMessage) {
+      agentEventCallback.onAgentMessage(agent.id, resumeMsg);
+    }
+    if (agentEventCallback.onAgentResumed) {
+      agentEventCallback.onAgentResumed(agent.id);
+    }
+
+    const messagesToMain: string[] = [];
+    const resumedMessages = [
+      ...agent.conversationHistory!,
+      { role: "user", content: "[System]: You were interrupted by a server restart. Continue your task from where you left off." },
+    ];
+
+    // Fire-and-forget — same as initial agent start
+    (async () => {
+      try {
+        await runAgentLoop(provider, config, resumedMessages, agent.systemPrompt!, messagesToMain, agent);
+      } finally {
+        agent.status = "completed";
+        agent.lastActivityTime = Date.now();
+
+        if (messagesToMain.length === 0) {
+          const autoMessage = `[Agent resumed task "${agent.task}" but did not send back a report.]`;
+          messagesToMain.push(autoMessage);
+          agent.messages.push(autoMessage);
+          if (agentEventCallback.onAgentMessage) {
+            agentEventCallback.onAgentMessage(agent.id, autoMessage);
+          }
+          try {
+            if (agentEventCallback.onSendToMain) {
+              agentEventCallback.onSendToMain(autoMessage, agent.id);
+            }
+          } catch (err) {
+            console.error(`Failed to auto-send agent ${agent.id} output to main:`, err);
+          }
+        }
+
+        await saveAgentToDisk(agent);
+
+        if (agentEventCallback.onAgentCompleted) {
+          agentEventCallback.onAgentCompleted(agent.id, "");
+        }
+      }
+    })();
+  }
+}
 
 // Background cleanup process - runs every 5 minutes
 setInterval(() => {
@@ -343,6 +416,12 @@ async function runAgentLoop(
         role: "tool",
         content: toolResults,
       });
+
+      // Checkpoint: save conversation state after each tool cycle
+      agent.conversationHistory = messages;
+      agent.systemPrompt = systemPrompt;
+      agent.providerType = provider.type;
+      saveAgentToDisk(agent).catch(err => console.error(`Agent ${agent.id} checkpoint failed:`, err));
 
       // Auto-compact agent conversation if approaching token limit
       if (shouldAutoCompactAgent(messages, provider.maxTokens)) {
