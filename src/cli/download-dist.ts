@@ -1,10 +1,11 @@
-import { existsSync, mkdirSync, rmSync, readFileSync } from "fs";
+import { existsSync, mkdirSync, rmSync, readFileSync, writeFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = join(__dirname, "../..");
 const DIST_DIR = join(PACKAGE_ROOT, "dist");
+const DIST_VERSION_FILE = join(DIST_DIR, ".version");
 const REPO = "dssnet/attache";
 
 interface GitHubRelease {
@@ -24,6 +25,14 @@ function getInstalledVersion(): string | null {
   }
 }
 
+function getDistVersion(): string | null {
+  try {
+    return readFileSync(DIST_VERSION_FILE, "utf-8").trim();
+  } catch {
+    return null;
+  }
+}
+
 async function fetchRelease(tag?: string): Promise<GitHubRelease> {
   const url = tag
     ? `https://api.github.com/repos/${REPO}/releases/tags/v${tag}`
@@ -37,14 +46,21 @@ async function fetchRelease(tag?: string): Promise<GitHubRelease> {
 }
 
 export async function downloadDist(force = false): Promise<void> {
-  if (!force && existsSync(join(DIST_DIR, "index.html"))) {
+  const version = getInstalledVersion();
+  const distVersion = getDistVersion();
+
+  // Skip if dist exists and matches the current package version
+  if (!force && distVersion && version && distVersion === version) {
+    console.log(`Frontend v${distVersion} is up to date.`);
+    return;
+  }
+
+  // Also skip if dist exists but we can't determine versions (e.g. no release yet)
+  if (!force && !version && existsSync(join(DIST_DIR, "index.html"))) {
     console.log("Frontend already exists, skipping download.");
     return;
   }
 
-  // During postinstall, download the dist matching the installed version
-  // During upgrade (force=true), this is called after bun install so version is already updated
-  const version = getInstalledVersion();
   let release: GitHubRelease;
 
   if (version) {
@@ -92,6 +108,10 @@ export async function downloadDist(force = false): Promise<void> {
   if (proc.exitCode !== 0) {
     throw new Error(`Failed to extract dist.tar.gz: ${proc.stderr.toString()}`);
   }
+
+  // Write version marker so we know which version this dist belongs to
+  const installedTag = release.tag_name.replace(/^v/, "");
+  writeFileSync(DIST_VERSION_FILE, installedTag, "utf-8");
 
   console.log("Frontend downloaded successfully.");
 }

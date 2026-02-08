@@ -9,7 +9,6 @@
     "attache": "src/cli/index.ts"
   },
   "scripts": {
-    "postinstall": "bun src/cli/download-dist.ts",
     "start": "bun run src/backend/index.ts",
     "dev": "bun --watch src/backend/index.ts & vite",
     "dev:backend": "bun --watch src/backend/index.ts",

@@ -1,10 +1,7 @@
 import { existsSync } from "fs";
-import { join, dirname } from "path";
+import { join } from "path";
 import { homedir } from "os";
-import { fileURLToPath } from "url";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const DIST_DIR = join(__dirname, "../../dist");
 const SERVICE_PATH = join(homedir(), ".config", "systemd", "user", "attache.service");
 const isSystemdService = !!process.env.INVOCATION_ID;
 
@@ -25,13 +22,9 @@ if (!isSystemdService && existsSync(SERVICE_PATH)) {
   }
 }
 
-// Download frontend if missing (e.g. postinstall was blocked)
-if (!existsSync(join(DIST_DIR, "index.html"))) {
-  console.log("  Frontend not found. Downloading...\n");
-  const { downloadDist } = await import("./download-dist.ts");
-  await downloadDist();
-  console.log("");
-}
+// Ensure frontend is downloaded and matches the current version
+const { downloadDist } = await import("./download-dist.ts");
+await downloadDist();
 
 const { startServer } = await import("../backend/index.ts");
 await startServer();
