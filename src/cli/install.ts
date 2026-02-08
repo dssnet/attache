@@ -11,11 +11,7 @@ const CONFIG_PATH = join(ATTACHE_DIR, "config.json");
 function promptRequired(message: string, fallback?: string): string {
   const suffix = fallback ? ` (${fallback})` : "";
   while (true) {
-    const answer = prompt(`  ${message}${suffix}:`);
-    if (answer === null) {
-      console.log("\n  Setup cancelled.");
-      process.exit(0);
-    }
+    const answer = prompt(`  ${message}${suffix}:`) ?? "";
     const value = answer.trim() || fallback || "";
     if (value) return value;
     console.log("  This field is required.");
@@ -23,21 +19,13 @@ function promptRequired(message: string, fallback?: string): string {
 }
 
 function promptOptional(message: string, fallback: string): string {
-  const answer = prompt(`  ${message} (${fallback}):`);
-  if (answer === null) {
-    console.log("\n  Setup cancelled.");
-    process.exit(0);
-  }
+  const answer = prompt(`  ${message} (${fallback}):`) ?? "";
   return answer.trim() || fallback;
 }
 
 function promptYesNo(message: string, fallback: boolean): boolean {
   const hint = fallback ? "Y/n" : "y/N";
-  const answer = prompt(`  ${message} (${hint}):`);
-  if (answer === null) {
-    console.log("\n  Setup cancelled.");
-    process.exit(0);
-  }
+  const answer = prompt(`  ${message} (${hint}):`) ?? "";
   const val = answer.trim().toLowerCase();
   if (!val) return fallback;
   return val.startsWith("y");
