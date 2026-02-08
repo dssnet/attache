@@ -1,7 +1,10 @@
 import { existsSync } from "fs";
-import { join } from "path";
+import { join, dirname } from "path";
 import { homedir } from "os";
+import { fileURLToPath } from "url";
 
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const DIST_DIR = join(__dirname, "../../dist");
 const SERVICE_PATH = join(homedir(), ".config", "systemd", "user", "attache.service");
 const isSystemdService = !!process.env.INVOCATION_ID;
 
@@ -20,6 +23,14 @@ if (!isSystemdService && existsSync(SERVICE_PATH)) {
     console.log("  View logs: journalctl --user -u attache -f");
     process.exit(0);
   }
+}
+
+// Download frontend if missing (e.g. postinstall was blocked)
+if (!existsSync(join(DIST_DIR, "index.html"))) {
+  console.log("  Frontend not found. Downloading...\n");
+  const { downloadDist } = await import("./download-dist.ts");
+  await downloadDist();
+  console.log("");
 }
 
 const { startServer } = await import("../backend/index.ts");

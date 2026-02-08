@@ -38,8 +38,14 @@ echo ""
 # Step 3: Install from tag
 echo "  Installing Attaché $TAG..."
 bun install -g "$REPO_URL#$TAG"
+
+# Step 4: Trust the package so postinstall can run
+echo "  Trusting attache package..."
+bun pm -g trust attache
+bun install -g
+
 echo "  ✓ Installed"
 echo ""
 
-# Step 4: Run setup wizard
+# Step 5: Run setup wizard
 attache install
