@@ -144,8 +144,18 @@ WantedBy=default.target
   });
 
   if (enable.exitCode === 0) {
-    console.log("  Service enabled. It will start on login.");
-    console.log("  Start now with: systemctl --user start attache");
+    console.log("  Service enabled. Starting...");
+    const start = Bun.spawnSync(["systemctl", "--user", "start", "attache"], {
+      stdout: "inherit",
+      stderr: "inherit",
+    });
+    if (start.exitCode === 0) {
+      console.log("  Service started.");
+      console.log("  View logs: journalctl --user -u attache -f");
+    } else {
+      console.log("  Could not start service. Start manually with:");
+      console.log("    systemctl --user start attache");
+    }
   } else {
     console.log("  Could not enable service. You can enable it manually:");
     console.log("    systemctl --user enable --now attache");

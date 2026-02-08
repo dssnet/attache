@@ -98,10 +98,10 @@ export async function downloadDist(force = false): Promise<void> {
 
 // Run directly as postinstall script
 if (import.meta.main) {
-  downloadDist().catch((err: unknown) => {
+  try {
+    await downloadDist();
+  } catch (err) {
     console.error("Failed to download frontend:", err);
-    // Don't exit with error code for postinstall — the server can still work
-    // if the user builds the frontend manually
-    console.log("You can build the frontend manually with: bun run build:frontend");
-  });
+    console.log("You can download it manually with: attache upgrade");
+  }
 }
