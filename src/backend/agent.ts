@@ -118,8 +118,8 @@ async function loadAgentsFromDisk() {
   }
 }
 
-// Load agents from disk on startup
-loadAgentsFromDisk().catch(error => {
+// Load agents from disk on startup — store promise so resumeRunningAgents can await it
+const agentsLoadedPromise = loadAgentsFromDisk().catch(error => {
   console.error("Failed to load agents:", error);
 });
 
@@ -128,6 +128,9 @@ loadAgentsFromDisk().catch(error => {
  * Called after server startup with config available.
  */
 export async function resumeRunningAgents(config: Config): Promise<void> {
+  // Wait for disk load to complete first
+  await agentsLoadedPromise;
+
   const runningAgents = Array.from(activeAgents.values()).filter(
     a => a.status === "running" && a.conversationHistory && a.systemPrompt
   );
