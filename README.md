@@ -23,65 +23,26 @@
 
 ## Quick Start
 
-### Prerequisites
+```bash
+curl -fsSL https://raw.githubusercontent.com/dssnet/attache/main/install.sh | bash
+```
 
-- [Bun](https://bun.sh) v1.0+
+This installs [Bun](https://bun.sh) (if needed), downloads the latest release, and runs the setup wizard which walks you through provider configuration, auth token generation, and optional systemd service installation.
 
-### Install
+### CLI Commands
 
 ```bash
-bun install
+attache install   # Run the setup wizard
+attache start     # Start the server (uses systemd if available)
+attache upgrade   # Check for updates and upgrade
 ```
-
-### Configure
-
-```bash
-cp config.example.json config.json
-```
-
-Edit `config.json`:
-
-- Add at least one model provider with an API key
-- Set `server.authToken` to a secure token (used to log in)
-- Optionally enable tools, add MCP servers, or set a Brave Search API key
-
-```json
-{
-  "models": {
-    "default": "openrouter",
-    "providers": {
-      "openrouter": {
-        "type": "custom-openai",
-        "apiUrl": "https://openrouter.ai/api/v1",
-        "apiKey": "sk-...",
-        "model": "anthropic/claude-sonnet-4-20250514",
-        "maxTokens": 8192,
-        "temperature": 1.0
-      }
-    }
-  },
-  "server": {
-    "port": 3000,
-    "host": "127.0.0.1",
-    "authToken": "your-secret-token"
-  }
-}
-```
-
-### Run
-
-```bash
-bun run build:frontend
-bun start
-```
-
-Open `http://localhost:3000` and log in with your auth token.
 
 ### Development
 
-Run backend and frontend separately:
-
 ```bash
+git clone https://github.com/dssnet/attache.git
+cd attache
+bun install
 bun run dev:backend    # Backend with auto-reload
 bun run dev:frontend   # Vite dev server with HMR
 ```
@@ -90,7 +51,7 @@ In dev mode, Vite proxies API and WebSocket requests from `localhost:5173` to th
 
 ## Configuration
 
-All configuration lives in `config.json`. Settings can also be changed at runtime through the web UI.
+Configuration lives in `~/.attache/config.json`, created by `attache install`. Settings can also be changed at runtime through the web UI.
 
 ### Model Providers
 
