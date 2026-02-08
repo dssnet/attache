@@ -8,15 +8,23 @@ const isSystemdService = !!process.env.INVOCATION_ID;
 // If a systemd service exists and we're NOT already running as that service,
 // delegate to systemctl instead of starting directly
 if (!isSystemdService && existsSync(SERVICE_PATH)) {
-  console.log("  Starting Attaché via systemd...");
-  const proc = Bun.spawnSync(["systemctl", "--user", "start", "attache"], {
+  // Check if already running — restart instead of start
+  const isActive = Bun.spawnSync(["systemctl", "--user", "is-active", "attache"], {
+    stdout: "pipe",
+    stderr: "ignore",
+  });
+  const action = isActive.stdout.toString().trim() === "active" ? "restart" : "start";
+  const label = action === "restart" ? "Restarting" : "Starting";
+
+  console.log(`  ${label} Attaché via systemd...`);
+  const proc = Bun.spawnSync(["systemctl", "--user", action, "attache"], {
     stdout: "inherit",
     stderr: "inherit",
   });
   if (proc.exitCode !== 0) {
-    console.error("  Failed to start service. Starting directly instead...\n");
+    console.error(`  Failed to ${action} service. Starting directly instead...\n`);
   } else {
-    console.log("  Attaché service started.");
+    console.log(`  Attaché service ${action === "restart" ? "restarted" : "started"}.`);
     console.log("  View logs: journalctl --user -u attache -f");
     process.exit(0);
   }
