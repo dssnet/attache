@@ -1,7 +1,7 @@
 <div align="center">
-  <img src="public/icon.png" alt="Attache Logo" width="120" height="120">
+  <img src="public/icon.png" alt="Attaché Logo" width="120" height="120">
 
-  # Attache
+  # Attaché
 
   **A self-hosted AI assistant with tools, agents, and MCP support.**
 
@@ -173,7 +173,7 @@ The main assistant can spawn sub-agents that run in the background. Agents have 
 
 ## Network Access
 
-By default, Attache binds to `127.0.0.1` (localhost only). To expose it over the network, use a reverse proxy:
+By default, Attaché binds to `127.0.0.1` (localhost only). To expose it over the network, use a reverse proxy:
 
 ```nginx
 server {
@@ -202,7 +202,7 @@ server {
 
 ## Data Storage
 
-Attache stores runtime data in `~/.attache/`:
+Attaché stores runtime data in `~/.attache/`:
 
 | Path | Contents |
 |------|----------|
