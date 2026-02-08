@@ -1,0 +1,35 @@
+{
+  "models": {
+    "default": "openrouter",
+    "providers": {
+      "openrouter": {
+        "type": "custom-openai",
+        "apiUrl": "https://openrouter.ai/api/v1",
+        "apiKey": "sk-...",
+        "model": "anthropic/claude-3.5-sonnet",
+        "maxTokens": 8192,
+        "temperature": 1.0
+      }
+    }
+  },
+  "assistant": {
+    "name": "Attaché",
+    "first_run": true
+  },
+  "server": {
+    "port": 3000,
+    "host": "127.0.0.1",
+    "authToken": "..."
+  },
+  "tools": {
+    "braveSearchApiKey": "",
+    "filesystem": false,
+    "terminal": false,
+    "workingDir": "",
+    "limitWorkingDir": true,
+    "commandWhitelist": []
+  },
+  "debug": {
+    "logTokens": false
+  }
+}

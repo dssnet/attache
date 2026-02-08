@@ -1,0 +1,379 @@
+<script setup lang="ts">
+import { ref, onMounted, onUnmounted, watch, computed, type Ref } from "vue";
+import { useWebSocket } from "../composables/useWebSocket";
+import { provideConfig } from "../composables/useConfig";
+import { provideSlashCommands } from "../composables/useSlashCommands";
+import Sidebar from "../components/sidebar/Sidebar.vue";
+import ChatMain from "../components/chat/ChatMain.vue";
+import AgentDetailModal from "../components/modals/AgentDetailModal.vue";
+import AgentMessageDetailModal from "../components/modals/AgentMessageDetailModal.vue";
+import SettingsModal from "../components/modals/settings/SettingsModal.vue";
+import ToolCallDetailModal from "../components/modals/ToolCallDetailModal.vue";
+
+const props = defineProps<{
+  authToken: string;
+}>();
+
+const emit = defineEmits<{
+  logout: [];
+}>();
+
+const selectedAgent = ref<string | null>(null);
+const showSettings = ref(false);
+const copied = ref(false);
+const sidebarCollapsed = ref(localStorage.getItem("sidebarCollapsed") === "true");
+
+function toggleSidebar() {
+  sidebarCollapsed.value = !sidebarCollapsed.value;
+  localStorage.setItem("sidebarCollapsed", String(sidebarCollapsed.value));
+}
+const selectedToolCall = ref<{
+  toolName: string;
+  toolInput: Record<string, any>;
+} | null>(null);
+const selectedAgentMessage = ref<string | null>(null);
+
+// Settings state with localStorage persistence
+type ThemeSetting = "dark" | "light" | "system";
+
+const theme = ref<ThemeSetting>(
+  (localStorage.getItem("theme") as ThemeSetting) || "system",
+);
+
+const {
+  connected,
+  messages,
+  agents,
+  error,
+  loading,
+  compacting,
+  queuedMessages,
+  toolCalls,
+  config,
+  configSaving,
+  mcpStatus,
+  connect,
+  sendMessage: wsSendMessage,
+  clearContext: wsClearContext,
+  clearAgents: wsClearAgents,
+  sendToAgent: wsSendToAgent,
+  getConfig: wsGetConfig,
+  updateConfig: wsUpdateConfig,
+  getMcpStatus: wsGetMcpStatus,
+  removeQueuedMessage: wsRemoveQueuedMessage,
+  compactContext: wsCompactContext,
+} = useWebSocket();
+
+provideConfig({
+  config,
+  configSaving,
+  mcpStatus,
+  getConfig: wsGetConfig,
+  updateConfig: wsUpdateConfig,
+  getMcpStatus: wsGetMcpStatus,
+});
+
+// Filter out empty assistant messages
+const visibleMessages = computed(() => {
+  return messages.value.filter((msg, index) => {
+    if (msg.role === "user" || msg.role === "agent") {
+      return true;
+    }
+    if (msg.content && msg.content.trim().length > 0) {
+      return true;
+    }
+    if (msg.role === "assistant") {
+      const hasToolCalls = toolCalls.value.some(
+        (tc) => tc.messageIndex === index,
+      );
+      if (hasToolCalls) {
+        return true;
+      }
+    }
+    return false;
+  });
+});
+
+// Get agents as an array for the component
+const agentsArray = computed(() => Array.from(agents.value.values()));
+
+// Context usage percentage based on estimated tokens vs maxTokens
+const contextPercent = computed(() => {
+  if (!config.value) return 0;
+  const provider = config.value.models.providers[config.value.models.default];
+  if (!provider || !provider.maxTokens) return 0;
+  const estimatedTokens = messages.value.reduce(
+    (sum, msg) => sum + Math.ceil(msg.content.length / 4),
+    0,
+  );
+  return Math.min(Math.round((estimatedTokens / provider.maxTokens) * 100), 100);
+});
+
+// Get selected agent data
+const selectedAgentData = computed(() => {
+  if (!selectedAgent.value) return null;
+  return agents.value.get(selectedAgent.value) || null;
+});
+
+async function sendMessage(message: string) {
+  wsSendMessage(message);
+}
+
+function clearContext() {
+  wsClearContext();
+}
+
+function clearAgents() {
+  if (!confirm("Are you sure you want to remove all agents?")) {
+    return;
+  }
+  wsClearAgents();
+}
+
+function sendAgentMessage(agentId: string, message: string) {
+  wsSendToAgent(agentId, message);
+}
+
+function copyToClipboard() {
+  const chatText = visibleMessages.value
+    .map((msg) => {
+      const role = msg.role === "user" ? "User" : "Assistant";
+      return `# ${role}\n${msg.content}`;
+    })
+    .join("\n\n");
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard
+      .writeText(chatText)
+      .then(() => {
+        copied.value = true;
+        setTimeout(() => {
+          copied.value = false;
+        }, 2000);
+      })
+      .catch((err: unknown) => {
+        console.error("Failed to copy chat:", err);
+        fallbackCopy(chatText);
+      });
+  } else {
+    fallbackCopy(chatText);
+  }
+}
+
+function fallbackCopy(text: string) {
+  const textArea = document.createElement("textarea");
+  textArea.value = text;
+  textArea.style.position = "fixed";
+  textArea.style.left = "-999999px";
+  document.body.appendChild(textArea);
+  textArea.select();
+
+  try {
+    document.execCommand("copy");
+    copied.value = true;
+    setTimeout(() => {
+      copied.value = false;
+    }, 2000);
+  } catch (err) {
+    console.error("Fallback copy failed:", err);
+  } finally {
+    document.body.removeChild(textArea);
+  }
+}
+
+provideSlashCommands({
+  stop: {
+    description: "Stop the current process",
+    run: () => console.log("stop"),
+  },
+  clear: {
+    description: "Clear conversation history",
+    run: () => clearContext(),
+  },
+  copy: {
+    description: "Copy chat to clipboard",
+    run: () => copyToClipboard(),
+  },
+  compact: {
+    description: "Compact conversation history",
+    run: () => wsCompactContext(),
+  },
+});
+
+async function openAgentDetail(agentId: string) {
+  selectedAgent.value = agentId;
+}
+
+function closeAgentDetail() {
+  selectedAgent.value = null;
+}
+
+function openToolCallDetail(toolCall: {
+  toolName: string;
+  toolInput: Record<string, any>;
+}) {
+  selectedToolCall.value = toolCall;
+}
+
+function closeToolCallDetail() {
+  selectedToolCall.value = null;
+}
+
+function handleKeydown(event: KeyboardEvent) {
+  // Handle Escape key to close modals
+  if (event.key === "Escape") {
+    if (selectedAgentMessage.value !== null) {
+      closeAgentMessage();
+      return;
+    }
+    if (selectedToolCall.value) {
+      closeToolCallDetail();
+      return;
+    }
+    if (selectedAgent.value) {
+      closeAgentDetail();
+      return;
+    }
+    if (showSettings.value) {
+      showSettings.value = false;
+      return;
+    }
+  }
+}
+
+function openSettings() {
+  showSettings.value = true;
+}
+
+function closeSettings() {
+  showSettings.value = false;
+}
+
+function setTheme(newTheme: ThemeSetting) {
+  theme.value = newTheme;
+  localStorage.setItem("theme", newTheme);
+  applyTheme();
+}
+
+function openAgentMessage(content: string) {
+  selectedAgentMessage.value = content;
+}
+
+function closeAgentMessage() {
+  selectedAgentMessage.value = null;
+}
+
+function resolveTheme(): "dark" | "light" {
+  if (theme.value === "system") {
+    return window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light";
+  }
+  return theme.value;
+}
+
+function applyTheme() {
+  const root = document.documentElement;
+  if (resolveTheme() === "light") {
+    root.setAttribute("data-theme", "light");
+  } else {
+    root.removeAttribute("data-theme");
+  }
+}
+
+// Re-apply when OS preference changes (only matters when set to "system")
+window
+  .matchMedia("(prefers-color-scheme: dark)")
+  .addEventListener("change", () => {
+    if (theme.value === "system") applyTheme();
+  });
+
+// Watch agents for changes and close modal if agent was removed
+watch(
+  agents,
+  () => {
+    if (selectedAgent.value) {
+      if (!agents.value.has(selectedAgent.value)) {
+        selectedAgent.value = null;
+      }
+    }
+  },
+  { deep: true },
+);
+
+onMounted(() => {
+  connect(props.authToken, () => emit("logout"));
+  window.addEventListener("keydown", handleKeydown);
+  applyTheme();
+});
+
+onUnmounted(() => {
+  window.removeEventListener("keydown", handleKeydown);
+});
+</script>
+
+<template>
+  <div
+    class="flex h-screen bg-bg-primary text-text-primary overflow-hidden"
+  >
+    <div
+      class="shrink-0 overflow-hidden transition-[width] duration-300 ease-in-out flex"
+      :class="sidebarCollapsed ? 'w-0' : 'w-full md:w-74'"
+    >
+      <Sidebar
+        :connected="connected"
+        :copied="copied"
+        :collapsed="sidebarCollapsed"
+        :agents="agentsArray"
+        @copy="copyToClipboard"
+        @clear-context="clearContext"
+        @agent-click="openAgentDetail"
+        @clear-agents="clearAgents"
+        @open-settings="openSettings"
+        @collapse-sidebar="toggleSidebar"
+      />
+    </div>
+
+    <ChatMain
+      :connected="connected"
+      :error="error"
+      :visibleMessages="visibleMessages"
+      :loading="loading"
+      :compacting="compacting"
+      :queuedMessages="queuedMessages"
+      :toolCalls="toolCalls"
+      :originalMessages="messages"
+      :contextPercent="contextPercent"
+      :sidebarCollapsed="sidebarCollapsed"
+      @submit="sendMessage"
+      @tool-call-click="openToolCallDetail"
+      @agent-message-click="openAgentMessage"
+      @remove-queued="(idx) => { const msg = queuedMessages[idx]; if (msg) wsRemoveQueuedMessage(msg.timestamp); }"
+      @toggle-sidebar="toggleSidebar"
+    />
+
+    <AgentDetailModal
+      :agent="selectedAgentData"
+      @close="closeAgentDetail"
+      @send-message="sendAgentMessage"
+    />
+
+    <SettingsModal
+      :show="showSettings"
+      :theme="theme"
+      @close="closeSettings"
+      @set-theme="setTheme"
+      @logout="emit('logout')"
+    />
+
+    <ToolCallDetailModal
+      :toolCall="selectedToolCall"
+      @close="closeToolCallDetail"
+    />
+
+    <AgentMessageDetailModal
+      :content="selectedAgentMessage"
+      @close="closeAgentMessage"
+    />
+  </div>
+</template>

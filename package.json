@@ -1,0 +1,43 @@
+{
+  "name": "attache",
+  "version": "0.1.0",
+  "module": "src/backend/index.ts",
+  "type": "module",
+  "description": "A self-hosted AI assistant with tools, agents, and MCP support",
+  "license": "AGPL-3.0",
+  "scripts": {
+    "start": "bun run src/backend/index.ts",
+    "dev": "bun --watch src/backend/index.ts & vite",
+    "dev:backend": "bun --watch src/backend/index.ts",
+    "dev:frontend": "vite",
+    "build:frontend": "vite build",
+    "build": "bun run build:frontend"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/markdown-it": "^14.1.2",
+    "@vitejs/plugin-vue": "^6.0.3",
+    "typescript": "latest",
+    "vite": "^7.3.1",
+    "vite-plugin-pwa": "^1.2.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.38",
+    "@ai-sdk/openai": "^3.0.26",
+    "@ai-sdk/openai-compatible": "^2.0.28",
+    "@modelcontextprotocol/sdk": "^1.26.0",
+    "@shikijs/markdown-it": "^3.22.0",
+    "@tailwindcss/vite": "^4.1.18",
+    "ai": "^6.0.75",
+    "hono": "^4.11.7",
+    "lucide": "^0.563.0",
+    "lucide-vue-next": "^0.563.0",
+    "markdown-it": "^14.1.0",
+    "shiki": "^3.22.0",
+    "tailwindcss": "^4.1.18",
+    "vue": "^3.5.27"
+  }
+}
