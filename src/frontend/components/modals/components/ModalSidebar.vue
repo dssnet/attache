@@ -10,8 +10,29 @@ const emit = defineEmits<{
 </script>
 
 <template>
+  <!-- Mobile: horizontal scrollable tabs -->
   <nav
-    class="w-48 shrink-0 border-r border-border-primary bg-bg-primary p-2 flex flex-col gap-px"
+    class="md:hidden shrink-0 border-b border-border-primary bg-bg-primary px-2 pt-1 flex gap-1 overflow-x-auto"
+  >
+    <button
+      v-for="section in sections"
+      :key="section.id"
+      :class="[
+        'flex items-center gap-1.5 px-3 py-2 rounded-t-lg text-xs font-medium transition-colors whitespace-nowrap',
+        activeSection === section.id
+          ? 'bg-primary text-white'
+          : 'text-text-secondary',
+      ]"
+      @click="emit('update:activeSection', section.id)"
+    >
+      <component :is="section.icon" :size="14" />
+      {{ section.label }}
+    </button>
+  </nav>
+
+  <!-- Desktop: vertical sidebar -->
+  <nav
+    class="hidden md:flex w-48 shrink-0 border-r border-border-primary bg-bg-primary p-2 flex-col gap-px"
   >
     <button
       v-for="section in sections"
