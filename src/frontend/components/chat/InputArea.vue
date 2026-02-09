@@ -32,7 +32,7 @@ defineExpose({ inputElement: () => inputComponent.value?.inputElement });
 </script>
 
 <template>
-  <div class="input-area p-4 z-10">
+  <div class="input-area py-4 z-10">
     <!-- Scroll to bottom button -->
     <Button
       icon
@@ -51,7 +51,7 @@ defineExpose({ inputElement: () => inputComponent.value?.inputElement });
       :queuedMessages="queuedMessages"
       @remove="(idx) => emit('remove-queued', idx)"
     />
-    <div class="max-w-3xl mx-auto">
+    <div class="max-w-200 mx-auto">
       <MessageInput
         ref="inputComponent"
         v-model="message"

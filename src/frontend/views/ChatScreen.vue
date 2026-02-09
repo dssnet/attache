@@ -21,7 +21,11 @@ const emit = defineEmits<{
 const selectedAgent = ref<string | null>(null);
 const showSettings = ref(false);
 const copied = ref(false);
-const sidebarCollapsed = ref(localStorage.getItem("sidebarCollapsed") === "true");
+const sidebarCollapsed = ref(
+  localStorage.getItem("sidebarCollapsed") !== null
+    ? localStorage.getItem("sidebarCollapsed") === "true"
+    : window.innerWidth < 768
+);
 
 function toggleSidebar() {
   sidebarCollapsed.value = !sidebarCollapsed.value;
@@ -316,9 +320,33 @@ onUnmounted(() => {
   <div
     class="flex h-screen bg-bg-primary text-text-primary overflow-hidden"
   >
+    <!-- Mobile backdrop -->
+    <Transition
+      enter-active-class="transition-opacity duration-300"
+      enter-from-class="opacity-0"
+      leave-active-class="transition-opacity duration-300"
+      leave-from-class="opacity-100"
+      leave-to-class="opacity-0"
+    >
+      <div
+        v-if="!sidebarCollapsed"
+        class="md:hidden fixed inset-0 z-30 bg-black/30"
+        @click="toggleSidebar"
+      />
+    </Transition>
+
+    <!-- Sidebar wrapper -->
     <div
-      class="shrink-0 overflow-hidden transition-[width] duration-300 ease-in-out flex"
-      :class="sidebarCollapsed ? 'w-0' : 'w-full md:w-74'"
+      :class="[
+        'shrink-0 overflow-hidden flex',
+        'fixed inset-y-0 left-0 z-40 w-4/5 max-w-80',
+        'md:relative md:inset-auto md:z-auto md:max-w-none',
+        'transition-transform duration-300 ease-in-out',
+        'md:transition-[width] md:duration-300 md:ease-in-out',
+        sidebarCollapsed
+          ? '-translate-x-full md:translate-x-0 md:w-0'
+          : 'translate-x-0 md:w-74',
+      ]"
     >
       <Sidebar
         :connected="connected"
@@ -350,6 +378,7 @@ onUnmounted(() => {
       @agent-message-click="openAgentMessage"
       @remove-queued="(idx) => { const msg = queuedMessages[idx]; if (msg) wsRemoveQueuedMessage(msg.timestamp); }"
       @toggle-sidebar="toggleSidebar"
+      @clear-context="clearContext"
     />
 
     <AgentDetailModal

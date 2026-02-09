@@ -160,11 +160,11 @@ defineExpose({ messagesContainer });
 <template>
   <div
     ref="messagesContainer"
-    class="flex flex-1 overflow-y-auto w-full flex-col relative"
+    class="flex flex-1 overflow-y-auto w-full flex-col relative px-4"
   >
     <slot :pinnedToBottom="pinnedToBottom" :scrollToBottom="scrollToBottom" />
 
-    <div class="max-w-200 mx-auto w-full gap-2 flex flex-col p-5 order-first">
+    <div class="max-w-200 mx-auto w-full gap-2 flex flex-col order-first">
       <template v-for="(msg, msgIndex) in visibleMessages" :key="msgIndex">
         <!-- Agent messages: always show as a clickable label -->
         <AgentMessageLabel
@@ -207,8 +207,20 @@ defineExpose({ messagesContainer });
       <div v-if="compacting" class="flex justify-start py-2 px-6">
         <div class="flex items-center gap-2 text-sm text-text-secondary">
           <svg class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2.5" class="opacity-20" />
-            <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
+            <circle
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              stroke-width="2.5"
+              class="opacity-20"
+            />
+            <path
+              d="M12 2a10 10 0 0 1 10 10"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+            />
           </svg>
           Compacting conversation...
         </div>

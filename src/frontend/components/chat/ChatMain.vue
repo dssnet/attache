@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { PanelLeft } from "lucide-vue-next";
+import { PanelLeft, CircleAlert, Menu, SquarePen } from "lucide-vue-next";
 import EmptyState from "../common/EmptyState.vue";
 import ChatMessages from "./ChatMessages.vue";
 import InputArea from "./InputArea.vue";
@@ -40,6 +40,7 @@ const emit = defineEmits<{
   "agent-message-click": [content: string];
   "remove-queued": [index: number];
   "toggle-sidebar": [];
+  "clear-context": [];
 }>();
 </script>
 
@@ -47,25 +48,35 @@ const emit = defineEmits<{
   <div
     class="main-container flex-1 min-w-0 flex flex-col relative bg-bg-primary overflow-hidden"
   >
-    <!-- Mobile top bar with sidebar toggle -->
+    <!-- Mobile top bar -->
     <div
-      v-if="sidebarCollapsed"
-      class="md:hidden flex items-center px-3 py-2 bg-bg-secondary border-b border-border-primary z-20"
+      class="md:hidden flex items-center justify-between px-3 py-2 bg-bg-secondary border-b border-border-primary z-20"
     >
       <Button
         variant="ghost"
         icon
         size="sm"
-        class="opacity-50"
         title="Show sidebar"
         @click="emit('toggle-sidebar')"
       >
-        <PanelLeft :size="18" />
+        <Menu :size="18" />
+      </Button>
+      <span class="font-semibold text-sm text-text-primary">Attaché</span>
+      <Button
+        variant="ghost"
+        icon
+        size="sm"
+        title="Clear chat"
+        @click="emit('clear-context')"
+      >
+        <SquarePen :size="18" />
       </Button>
     </div>
 
     <!-- Desktop sidebar toggle when collapsed -->
-    <div class="hidden md:block absolute top-4 left-4 z-20 opacity-50">
+    <div
+      class="hidden md:block absolute top-4 left-4 z-20 bg-bg-primary/60 backdrop-blur-sm rounded-lg"
+    >
       <Transition
         enter-active-class="transition-opacity duration-300 delay-200"
         enter-from-class="opacity-0"
@@ -89,9 +100,13 @@ const emit = defineEmits<{
 
     <div
       v-if="error"
-      class="absolute top-0 left-0 right-0 z-10 bg-error-bg text-error-text px-6 py-3 text-center text-sm m-4 rounded-radius border border-border-primary"
+      :class="[
+        'left-0 right-0 z-10 bg-error-bg/90 backdrop-blur-sm text-error-text px-4 py-2.5 text-sm mx-4 mt-4 rounded-radius border border-error-text/20 flex items-center gap-2.5 shadow-lg',
+        sidebarCollapsed ? 'md:absolute md:top-0' : 'absolute top-0',
+      ]"
     >
-      {{ error }}
+      <CircleAlert :size="16" class="shrink-0 opacity-80" />
+      <span>{{ error }}</span>
     </div>
 
     <!-- Empty State -->
