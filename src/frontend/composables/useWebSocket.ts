@@ -95,7 +95,28 @@ export function useWebSocket() {
 
   let reconnectTimeout: number | null = null;
   let reconnectAttempts = 0;
-  const maxReconnectAttempts = 5;
+
+  // Heartbeat: if no message arrives within this window, assume the
+  // connection is dead (zombie socket behind a proxy) and force reconnect.
+  const HEARTBEAT_TIMEOUT_MS = 45_000; // slightly longer than server's 30s ping interval
+  let heartbeatTimer: number | null = null;
+
+  function resetHeartbeat() {
+    if (heartbeatTimer) clearTimeout(heartbeatTimer);
+    heartbeatTimer = setTimeout(() => {
+      console.log("Heartbeat timeout — no data received, forcing reconnect");
+      if (ws.value) {
+        ws.value.close();
+      }
+    }, HEARTBEAT_TIMEOUT_MS) as unknown as number;
+  }
+
+  function clearHeartbeat() {
+    if (heartbeatTimer) {
+      clearTimeout(heartbeatTimer);
+      heartbeatTimer = null;
+    }
+  }
 
   function connect(authToken: string, onLogout: () => void) {
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
@@ -107,12 +128,15 @@ export function useWebSocket() {
       console.log("WebSocket connected");
       connected.value = true;
       reconnectAttempts = 0;
+      error.value = null;
+      resetHeartbeat();
 
       // Authenticate
       send({ type: "auth", token: authToken });
     };
 
     ws.value.onmessage = (event) => {
+      resetHeartbeat();
       const message: ServerMessage = JSON.parse(event.data);
       handleServerMessage(message, onLogout);
     };
@@ -126,21 +150,18 @@ export function useWebSocket() {
       console.log("WebSocket closed");
       connected.value = false;
       authenticated.value = false;
+      clearHeartbeat();
 
-      // Attempt to reconnect
-      if (reconnectAttempts < maxReconnectAttempts) {
-        reconnectAttempts++;
-        const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 10000);
-        console.log(
-          `Reconnecting in ${delay}ms (attempt ${reconnectAttempts})`,
-        );
+      // Always attempt to reconnect with exponential backoff (capped at 30s)
+      reconnectAttempts++;
+      const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
+      console.log(
+        `Reconnecting in ${delay}ms (attempt ${reconnectAttempts})`,
+      );
 
-        reconnectTimeout = setTimeout(() => {
-          connect(authToken, onLogout);
-        }, delay) as unknown as number;
-      } else {
-        error.value = "Connection lost. Please refresh the page.";
-      }
+      reconnectTimeout = setTimeout(() => {
+        connect(authToken, onLogout);
+      }, delay) as unknown as number;
     };
   }
 
@@ -368,8 +389,12 @@ export function useWebSocket() {
   function disconnect() {
     if (reconnectTimeout) {
       clearTimeout(reconnectTimeout);
+      reconnectTimeout = null;
     }
+    clearHeartbeat();
+    // Prevent onclose from triggering a reconnect
     if (ws.value) {
+      ws.value.onclose = null;
       ws.value.close();
       ws.value = null;
     }

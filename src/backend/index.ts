@@ -26,6 +26,12 @@ export async function startServer() {
       // Handle WebSocket upgrade
       const url = new URL(req.url);
       if (url.pathname === "/ws") {
+        const upgradeHeader = req.headers.get("upgrade");
+        if (!upgradeHeader || upgradeHeader.toLowerCase() !== "websocket") {
+          console.warn("WebSocket upgrade rejected: missing or invalid Upgrade header:", upgradeHeader);
+          return new Response("WebSocket upgrade required", { status: 426 });
+        }
+
         const upgraded = server.upgrade(req, {
           data: {
             authenticated: false,
@@ -35,7 +41,8 @@ export async function startServer() {
         if (upgraded) {
           return undefined;
         }
-        return new Response("WebSocket upgrade failed", { status: 400 });
+        console.error("WebSocket server.upgrade() returned false despite valid headers");
+        return new Response("WebSocket upgrade failed", { status: 500 });
       }
 
       // Handle regular HTTP requests

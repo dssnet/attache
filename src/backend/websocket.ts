@@ -13,6 +13,27 @@ interface WebSocketData {
 }
 
 const clients = new Set<ServerWebSocket<WebSocketData>>();
+const alive = new WeakSet<ServerWebSocket<WebSocketData>>();
+
+// Heartbeat: ping all clients every 30s, remove unresponsive ones
+const HEARTBEAT_INTERVAL_MS = 30_000;
+
+setInterval(() => {
+  for (const client of clients) {
+    if (!alive.has(client)) {
+      // Client didn't respond to last ping — consider it dead
+      console.log(`Heartbeat: removing unresponsive client ${client.data.clientId}`);
+      clients.delete(client);
+      try { client.close(1000, "heartbeat timeout"); } catch {}
+      continue;
+    }
+    alive.delete(client);
+    try { client.ping(); } catch {
+      // Send failed — remove dead client
+      clients.delete(client);
+    }
+  }
+}, HEARTBEAT_INTERVAL_MS);
 
 // Rate limiting for authentication attempts
 const AUTH_MAX_ATTEMPTS = 5;
@@ -275,6 +296,11 @@ export function handleWebSocket(config: Config) {
 
     open(ws: ServerWebSocket<WebSocketData>) {
       console.log(`WebSocket connection opened: ${ws.data.clientId}`);
+      alive.add(ws);
+    },
+
+    pong(ws: ServerWebSocket<WebSocketData>) {
+      alive.add(ws);
     },
 
     close(ws: ServerWebSocket<WebSocketData>) {
@@ -487,14 +513,29 @@ async function handleClientMessage(
 }
 
 function sendToClient(ws: ServerWebSocket<WebSocketData>, message: ServerMessage) {
-  ws.send(JSON.stringify(message));
+  const payload = JSON.stringify(message);
+  queueMicrotask(() => {
+    try {
+      ws.send(payload);
+    } catch {
+      clients.delete(ws);
+    }
+  });
 }
 
 function broadcast(message: ServerMessage) {
   const payload = JSON.stringify(message);
-  for (const client of clients) {
+  // Snapshot to avoid mutation-during-iteration issues
+  const snapshot = [...clients];
+  for (const client of snapshot) {
     if (client.data.authenticated) {
-      client.send(payload);
+      queueMicrotask(() => {
+        try {
+          client.send(payload);
+        } catch {
+          clients.delete(client);
+        }
+      });
     }
   }
 }
