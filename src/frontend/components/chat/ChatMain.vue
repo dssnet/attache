@@ -100,10 +100,7 @@ const emit = defineEmits<{
 
     <div
       v-if="error"
-      :class="[
-        'left-0 right-0 z-10 bg-error-bg/90 backdrop-blur-sm text-error-text px-4 py-2.5 text-sm mx-4 mt-4 rounded-radius border border-error-text/20 flex items-center gap-2.5 shadow-lg',
-        sidebarCollapsed ? 'md:absolute md:top-0' : 'absolute top-0',
-      ]"
+      class="bg-error-bg/90 backdrop-blur-sm text-error-text px-4 py-2.5 text-sm mx-4 mt-4 rounded-radius border border-error-text/20 flex items-center gap-2.5 shadow-lg md:absolute md:left-0 md:right-0 md:top-0 md:z-10"
     >
       <CircleAlert :size="16" class="shrink-0 opacity-80" />
       <span>{{ error }}</span>

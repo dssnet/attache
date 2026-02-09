@@ -32,14 +32,14 @@ defineExpose({ inputElement: () => inputComponent.value?.inputElement });
 </script>
 
 <template>
-  <div class="input-area py-4 z-10">
+  <div class="input-area py-4 z-10 pointer-events-none">
     <!-- Scroll to bottom button -->
     <Button
       icon
       size="sm"
       variant="secondary"
       :class="[
-        'mx-auto mb-8 shadow-md rounded-full!',
+        'mx-auto mb-8 shadow-md rounded-full! pointer-events-auto',
         pinnedToBottom ? 'invisible' : '',
       ]"
       @click="emit('scroll-to-bottom')"
@@ -48,10 +48,11 @@ defineExpose({ inputElement: () => inputComponent.value?.inputElement });
     </Button>
 
     <QueueIndicator
+      class="pointer-events-auto"
       :queuedMessages="queuedMessages"
       @remove="(idx) => emit('remove-queued', idx)"
     />
-    <div class="max-w-200 mx-auto">
+    <div class="max-w-200 mx-auto pointer-events-auto">
       <MessageInput
         ref="inputComponent"
         v-model="message"
