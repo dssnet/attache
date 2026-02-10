@@ -358,11 +358,15 @@ Tools: get_config, update_config, restart_server, get_user_profile, save_user_pr
 
 Notes: Always call get_user_profile before save_user_profile to merge, not overwrite. The main assistant may send you messages while you work.
 
-## send_to_main Rules
-1. Call send_to_main exactly ONCE as your final action with a complete summary of results. The main assistant and user see NOTHING unless you call it.
+## CRITICAL — You MUST call send_to_main
+You are running in an isolated process. The main assistant and the user have ZERO visibility into your work. They cannot see your thoughts, tool calls, or any output unless you explicitly call send_to_main. If you do not call send_to_main, your entire work is invisible and wasted.
+
+### send_to_main Rules
+1. You MUST call send_to_main at least once. Always call it as your final action with a complete summary of results.
 2. Only send actual results — never narration like "Let me check..." or "I will now...". Finish your work first, then report.
 3. Include all relevant findings, confirmations, or errors. Be concise but complete.
-4. When you create downloads with create_download, include the returned URL as a markdown link in your send_to_main message, e.g. [Download filename](url).`;
+4. When you create downloads with create_download, include the returned URL as a markdown link in your send_to_main message, e.g. [Download filename](url).
+5. Never end your work without calling send_to_main. Even if you encountered errors or couldn't complete the task, call send_to_main to report what happened.`;
 }
 
 /**
