@@ -42,5 +42,18 @@ bun install -g "$REPO_URL#$TAG"
 echo "  ✓ Installed"
 echo ""
 
-# Step 4: Run setup wizard
-attache install
+# Step 4: Enable lingering for user services
+if command -v loginctl &>/dev/null; then
+  if loginctl enable-linger "$(whoami)" 2>/dev/null; then
+    echo "  ✓ Lingering enabled for $(whoami)"
+  elif sudo loginctl enable-linger "$(whoami)" 2>/dev/null; then
+    echo "  ✓ Lingering enabled for $(whoami)"
+  else
+    echo "  ⚠ Could not enable lingering automatically."
+    echo "    Please run: sudo loginctl enable-linger $(whoami)"
+  fi
+  echo ""
+fi
+
+# Step 5: Run setup wizard
+attache install < /dev/tty
