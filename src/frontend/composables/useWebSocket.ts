@@ -85,7 +85,8 @@ type ServerMessage =
     }
   | { type: "agent_detail"; agentId: string; displayMessages: AgentDisplayMessage[] }
   | { type: "compact_start" }
-  | { type: "compact_complete" };
+  | { type: "compact_complete" }
+  | { type: "ping" };
 
 export function useWebSocket() {
   const ws = ref<WebSocket | null>(null);

@@ -62,4 +62,5 @@ export type ServerMessage =
   | { type: "mcp_status"; servers: Array<{ name: string; status: string; toolCount: number; description?: string; error?: string }> }
   | { type: "agent_detail"; agentId: string; displayMessages: AgentDisplayMessage[] }
   | { type: "compact_start" }
-  | { type: "compact_complete" };
+  | { type: "compact_complete" }
+  | { type: "ping" };

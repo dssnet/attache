@@ -29,7 +29,12 @@ setInterval(() => {
       continue;
     }
     alive.delete(client);
-    try { client.ping(); } catch {
+    try {
+      client.ping();
+      // Also send a data-level ping — browser WebSocket API doesn't expose
+      // protocol pings to onmessage, so the client heartbeat needs this.
+      client.send(JSON.stringify({ type: "ping" }));
+    } catch {
       // Send failed — remove dead client
       clients.delete(client);
     }
