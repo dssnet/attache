@@ -49,27 +49,16 @@ const emit = defineEmits<{
       />
     </div>
 
-    <div class="p-3">
+    <div class="border-t border-border-primary p-3">
       <Button
-        variant="secondary"
+        variant="ghost"
         full-width
-        class="flex items-center justify-center gap-2 mb-2"
+        class="flex items-center justify-start gap-2"
         @click="emit('open-settings')"
       >
-        <Settings :size="16" />
+        <Settings :size="20" />
         Settings
       </Button>
-      <div
-        class="flex items-center justify-center gap-2 text-xs text-text-secondary py-2"
-      >
-        <span
-          :class="[
-            'w-2 h-2 rounded-full',
-            connected ? 'bg-emerald-500' : 'bg-red-500',
-          ]"
-        ></span>
-        {{ connected ? "Connected" : "Disconnected" }}
-      </div>
     </div>
   </div>
 </template>

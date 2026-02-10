@@ -49,7 +49,7 @@ watch(
 
 <template>
   <Modal :show="show" title="Settings" no-padding @close="emit('close')">
-    <div class="flex h-[60vh]">
+    <div class="flex flex-col md:flex-row md:h-[60vh] flex-1 min-h-0">
       <ModalSidebar
         :sections="sections"
         v-model:active-section="activeSection"

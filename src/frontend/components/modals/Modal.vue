@@ -13,23 +13,41 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div
-    v-if="show"
-    class="fixed inset-0 bg-overlay flex items-center justify-center z-1000"
-    @click="emit('close')"
+  <Transition
+    enter-active-class="transition-opacity duration-200"
+    enter-from-class="opacity-0"
+    leave-active-class="transition-opacity duration-200"
+    leave-from-class="opacity-100"
+    leave-to-class="opacity-0"
   >
     <div
-      class="modal-content overflow-hidden bg-bg-secondary border border-border-primary rounded-2xl w-[90%] max-w-200 max-h-[80vh] flex flex-col shadow-[0_20px_25px_-5px_rgba(0,0,0,0.5)]"
-      @click.stop
+      v-if="show"
+      class="fixed inset-0 bg-overlay flex items-end md:items-center justify-center z-1000"
+      @click="emit('close')"
     >
-      <ModalHeader :title="title" @close="emit('close')">
-        <template #icon>
-          <slot name="title-icon" />
-        </template>
-      </ModalHeader>
-      <div :class="['overflow-y-auto flex-1', noPadding ? '' : 'p-6']">
-        <slot />
-      </div>
+      <Transition
+        appear
+        enter-active-class="transition-transform duration-300 ease-out md:transition-none"
+        enter-from-class="translate-y-full md:translate-y-0"
+        leave-active-class="transition-transform duration-200 ease-in md:transition-none"
+        leave-from-class="translate-y-0"
+        leave-to-class="translate-y-full md:translate-y-0"
+      >
+        <div
+          class="modal-content overflow-hidden bg-bg-secondary border border-border-primary flex flex-col shadow-[0_20px_25px_-5px_rgba(0,0,0,0.5)] w-full h-[95vh] rounded-t-2xl md:rounded-2xl md:h-auto md:w-[90%] md:max-w-200 md:max-h-[80vh]"
+          @click.stop
+        >
+          <div class="md:hidden w-10 h-1 bg-text-secondary/30 rounded-full mx-auto mt-2 shrink-0" />
+          <ModalHeader :title="title" @close="emit('close')">
+            <template #icon>
+              <slot name="title-icon" />
+            </template>
+          </ModalHeader>
+          <div :class="['overflow-y-auto flex-1', noPadding ? '' : 'p-6']">
+            <slot />
+          </div>
+        </div>
+      </Transition>
     </div>
-  </div>
+  </Transition>
 </template>
