@@ -3,6 +3,7 @@ import { createServer } from "./server.ts";
 import { handleWebSocket } from "./websocket.ts";
 import { mcpManager } from "./mcp.ts";
 import { resumeRunningAgents } from "./agent.ts";
+import { startCronJobs } from "./cron.ts";
 
 // Main entry point for Attaché
 export async function startServer() {
@@ -57,6 +58,9 @@ export async function startServer() {
   console.log(`\n✨ ${config.assistant.name} is ready!`);
   console.log(`Server running at http://${server.hostname}:${server.port}`);
   console.log(`WebSocket available at ws://${server.hostname}:${server.port}/ws`);
+
+  // Start scheduled jobs
+  startCronJobs();
 
   // Resume any agents that were running before the server stopped
   resumeRunningAgents(config).catch(err => {

@@ -263,8 +263,7 @@ export async function resumeRunningAgents(config: Config): Promise<void> {
   }
 }
 
-// Background cleanup process - runs every 5 minutes
-setInterval(() => {
+export function cleanupInactiveAgents() {
   const now = Date.now();
   const agentsToDelete: string[] = [];
   for (const [agentId, agent] of activeAgents.entries()) {
@@ -282,7 +281,7 @@ setInterval(() => {
       agentEventCallback.onAgentRemoved(agentId);
     }
   }
-}, 5 * 60 * 1000);
+}
 
 export function sendToAgent(agentId: string, message: string): boolean {
   const agent = activeAgents.get(agentId);
