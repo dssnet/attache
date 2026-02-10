@@ -41,3 +41,8 @@ config.json
 
 # ToDo file
 TODO.local.md
+
+# Tauri
+attache-app/src-tauri/target/
+attache-app/src-tauri/gen/
+attache-app/node_modules/

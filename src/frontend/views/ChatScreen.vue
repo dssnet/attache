@@ -318,7 +318,7 @@ onUnmounted(() => {
 
 <template>
   <div
-    class="flex h-screen bg-bg-primary text-text-primary overflow-hidden"
+    class="flex h-full bg-bg-primary text-text-primary overflow-hidden"
   >
     <!-- Mobile backdrop -->
     <Transition
@@ -339,8 +339,8 @@ onUnmounted(() => {
     <div
       :class="[
         'shrink-0 overflow-hidden flex',
-        'fixed inset-y-0 left-0 z-40 w-4/5 max-w-80',
-        'md:relative md:inset-auto md:z-auto md:max-w-none',
+        'fixed inset-y-0 left-0 z-40 w-4/5 max-w-80 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] bg-bg-secondary',
+        'md:relative md:inset-auto md:z-auto md:max-w-none md:pt-0 md:pb-0 md:pl-0 md:bg-transparent',
         'transition-transform duration-300 ease-in-out',
         'md:transition-[width] md:duration-300 md:ease-in-out',
         sidebarCollapsed

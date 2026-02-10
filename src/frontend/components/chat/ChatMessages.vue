@@ -154,17 +154,15 @@ onUpdated(() => {
   if (pinnedToBottom.value) scrollToBottom();
 });
 
-defineExpose({ messagesContainer });
+defineExpose({ messagesContainer, pinnedToBottom, scrollToBottom });
 </script>
 
 <template>
   <div
     ref="messagesContainer"
-    class="flex flex-1 overflow-y-auto w-full flex-col relative px-4"
+    class="flex flex-1 overflow-y-auto w-full flex-col relative px-4 pr-[max(1rem,env(safe-area-inset-right))] pb-2"
   >
-    <slot :pinnedToBottom="pinnedToBottom" :scrollToBottom="scrollToBottom" />
-
-    <div class="max-w-200 mx-auto w-full gap-2 flex flex-col order-first">
+    <div class="max-w-200 mx-auto w-full gap-2 flex flex-col mt-auto">
       <template v-for="(msg, msgIndex) in visibleMessages" :key="msgIndex">
         <!-- Agent messages: always show as a clickable label -->
         <AgentMessageLabel

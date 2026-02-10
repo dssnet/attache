@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import { PanelLeft, CircleAlert, Menu, SquarePen } from "lucide-vue-next";
+import { ref } from "vue";
+import { PanelLeft, CircleAlert, Menu, SquarePen, ArrowDown } from "lucide-vue-next";
 import EmptyState from "../common/EmptyState.vue";
 import ChatMessages from "./ChatMessages.vue";
 import InputArea from "./InputArea.vue";
 import Button from "../ui/Button.vue";
+
+const chatMessagesRef = ref<InstanceType<typeof ChatMessages> | null>(null);
 
 defineProps<{
   sidebarCollapsed: boolean;
@@ -50,7 +53,7 @@ const emit = defineEmits<{
   >
     <!-- Mobile top bar -->
     <div
-      class="md:hidden flex items-center justify-between px-3 py-2 bg-bg-secondary border-b border-border-primary z-20"
+      class="md:hidden flex items-center justify-between px-3 py-2 pt-[max(0.5rem,env(safe-area-inset-top))] bg-bg-secondary border-b border-border-primary z-20"
     >
       <Button
         variant="ghost"
@@ -113,8 +116,9 @@ const emit = defineEmits<{
     />
 
     <!-- Chat Messages -->
-    <div v-else class="flex-1 flex flex-col overflow-hidden">
+    <div v-else class="flex-1 flex flex-col overflow-hidden relative">
       <ChatMessages
+        ref="chatMessagesRef"
         :visibleMessages="visibleMessages"
         :loading="loading"
         :compacting="compacting"
@@ -122,19 +126,31 @@ const emit = defineEmits<{
         :originalMessages="originalMessages"
         @tool-call-click="(tc) => emit('tool-call-click', tc)"
         @agent-message-click="(content) => emit('agent-message-click', content)"
+      />
+      <!-- Scroll to bottom button -->
+      <Transition
+        enter-active-class="transition-opacity duration-200"
+        enter-from-class="opacity-0"
+        leave-active-class="transition-opacity duration-200"
+        leave-to-class="opacity-0"
       >
-        <template #default="{ pinnedToBottom, scrollToBottom }">
-          <InputArea
-            class="sticky bottom-0 mt-auto"
-            :queuedMessages="queuedMessages"
-            :pinnedToBottom="pinnedToBottom"
-            :contextPercent="contextPercent"
-            @submit="(msg) => emit('submit', msg)"
-            @remove-queued="(idx) => emit('remove-queued', idx)"
-            @scroll-to-bottom="scrollToBottom"
-          />
-        </template>
-      </ChatMessages>
+        <Button
+          v-if="chatMessagesRef && !chatMessagesRef.pinnedToBottom"
+          icon
+          size="sm"
+          variant="secondary"
+          class="absolute bottom-24 left-1/2 -translate-x-1/2 shadow-md rounded-full! z-10"
+          @click="chatMessagesRef?.scrollToBottom()"
+        >
+          <ArrowDown :size="16" />
+        </Button>
+      </Transition>
+      <InputArea
+        :queuedMessages="queuedMessages"
+        :contextPercent="contextPercent"
+        @submit="(msg) => emit('submit', msg)"
+        @remove-queued="(idx) => emit('remove-queued', idx)"
+      />
     </div>
   </div>
 </template>

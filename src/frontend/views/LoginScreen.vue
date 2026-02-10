@@ -17,7 +17,7 @@ function handleSubmit() {
 </script>
 
 <template>
-  <div class="flex items-center justify-center h-screen bg-linear-to-b from-gradient-start to-gradient-end">
+  <div class="flex items-center justify-center h-full bg-linear-to-b from-gradient-start to-gradient-end p-[env(safe-area-inset-top)_env(safe-area-inset-right)_env(safe-area-inset-bottom)_env(safe-area-inset-left)]">
     <div
       class="bg-white p-8 rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.3)] w-[90%] max-w-100"
       data-theme="light"

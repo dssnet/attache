@@ -2,22 +2,18 @@
 import { ref } from "vue";
 import QueueIndicator from "../common/QueueIndicator.vue";
 import MessageInput from "./MessageInput.vue";
-import Button from "../ui/Button.vue";
-import { ArrowDown } from "lucide-vue-next";
 
 const props = defineProps<{
   queuedMessages: Array<{
     content: string;
     timestamp: number;
   }>;
-  pinnedToBottom?: boolean;
   contextPercent?: number;
 }>();
 
 const emit = defineEmits<{
   submit: [message: string];
   "remove-queued": [index: number];
-  "scroll-to-bottom": [];
 }>();
 
 const message = ref("");
@@ -32,27 +28,12 @@ defineExpose({ inputElement: () => inputComponent.value?.inputElement });
 </script>
 
 <template>
-  <div class="input-area py-4 z-10 pointer-events-none">
-    <!-- Scroll to bottom button -->
-    <Button
-      icon
-      size="sm"
-      variant="secondary"
-      :class="[
-        'mx-auto mb-8 shadow-md rounded-full! pointer-events-auto',
-        pinnedToBottom ? 'invisible' : '',
-      ]"
-      @click="emit('scroll-to-bottom')"
-    >
-      <ArrowDown :size="16" />
-    </Button>
-
+  <div class="input-area pt-2 pb-3 px-4 pr-[max(1rem,env(safe-area-inset-right))] z-10">
     <QueueIndicator
-      class="pointer-events-auto"
       :queuedMessages="queuedMessages"
       @remove="(idx) => emit('remove-queued', idx)"
     />
-    <div class="max-w-200 mx-auto pointer-events-auto">
+    <div class="max-w-200 mx-auto">
       <MessageInput
         ref="inputComponent"
         v-model="message"

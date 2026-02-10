@@ -1,8 +1,14 @@
 <script setup lang="ts">
-import { Settings } from "lucide-vue-next";
+import { Settings, LogOut } from "lucide-vue-next";
 import SidebarHeader from "./SidebarHeader.vue";
 import AgentsList from "../agents/AgentsList.vue";
 import Button from "../ui/Button.vue";
+
+const isTauri = !!(window as any).__TAURI__;
+
+function disconnect() {
+  (window as any).__TAURI__?.core?.invoke("disconnect");
+}
 
 defineProps<{
   connected: boolean;
@@ -49,7 +55,7 @@ const emit = defineEmits<{
       />
     </div>
 
-    <div class="border-t border-border-primary p-3">
+    <div class="border-t border-border-primary p-3 flex flex-col gap-1">
       <Button
         variant="ghost"
         full-width
@@ -58,6 +64,16 @@ const emit = defineEmits<{
       >
         <Settings :size="20" />
         Settings
+      </Button>
+      <Button
+        v-if="isTauri"
+        variant="ghost"
+        full-width
+        class="flex items-center justify-start gap-2"
+        @click="disconnect"
+      >
+        <LogOut :size="20" />
+        Disconnect
       </Button>
     </div>
   </div>
