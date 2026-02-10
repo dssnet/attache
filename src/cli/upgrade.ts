@@ -58,6 +58,16 @@ if (proc.exitCode !== 0) {
   process.exit(1);
 }
 
+// Run migrations from the newly installed version
+console.log("\n  Running migrations...");
+const migrateProc = Bun.spawnSync(["attache", "migrate"], {
+  stdout: "inherit",
+  stderr: "inherit",
+});
+if (migrateProc.exitCode !== 0) {
+  console.error("  Warning: Some migrations failed. Check output above.");
+}
+
 // Update and restart systemd service if it exists
 import { serviceExists, renderServiceUnit, currentServiceUnit, writeServiceUnit, daemonReload } from "./service.ts";
 

@@ -12,6 +12,9 @@ switch (command) {
   case "upgrade":
     await import("./upgrade.ts");
     break;
+  case "migrate":
+    await import("./migrate.ts");
+    break;
   default:
     console.log(`
   Attache - A self-hosted AI assistant
