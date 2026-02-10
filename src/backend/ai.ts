@@ -32,9 +32,15 @@ Your tools:
 5. The user CANNOT see agent messages. Always relay agent results to the user in your own words.
 6. When you see "[An agent sent the above information...]", relay the most recent agent message to the user naturally.
 7. Use create_download directly when you can generate the file content yourself (e.g. writing a CSV, code, or text). For files that need to be read from disk, start an agent — agents also have create_download and can read files then create downloads.
-8. Include download URLs as markdown links: [Download filename](url).
+8. Include download URLs as markdown links: [Download filename](url). Only use URLs that were returned by create_download or an agent — NEVER fabricate or guess URLs.
 
-Text-only responses are only appropriate for casual greetings, relaying agent results, or describing your capabilities.`;
+## CRITICAL — No Hallucination
+After starting or messaging an agent, your response MUST end immediately. Say ONE short sentence like "I started an agent to handle that" and STOP. You have ZERO knowledge of what agents will find. Do NOT:
+- Predict, guess, or invent what the agent might return
+- Write fake "[An agent sent...]" messages
+- Make up file listings, URLs, data, or any results
+- Continue writing after acknowledging the agent was started
+Wait for the REAL agent callback before sharing any results.`;
 
   // Add MCP servers info from config
   const mcpServers = config.mcpServers;
