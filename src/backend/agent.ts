@@ -313,6 +313,12 @@ export function getAgentInfo(agentId: string): { id: string; task: string; statu
   return { id: agent.id, task: agent.task, status: agent.status };
 }
 
+export function getAgentDetail(agentId: string): { id: string; task: string; status: "running" | "completed"; displayMessages: AgentDisplayMessage[] } | null {
+  const agent = activeAgents.get(agentId);
+  if (!agent) return null;
+  return { id: agent.id, task: agent.task, status: agent.status, displayMessages: agent.displayMessages };
+}
+
 export async function clearAllAgents(): Promise<void> {
   const agentIds = Array.from(activeAgents.keys());
   for (const agentId of agentIds) {

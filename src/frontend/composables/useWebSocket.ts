@@ -18,7 +18,9 @@ type ClientMessage =
   | { type: "update_config"; config: Partial<Config> }
   | { type: "get_mcp_status" }
   | { type: "remove_queued"; timestamp: number }
-  | { type: "compact_context" };
+  | { type: "compact_context" }
+  | { type: "subscribe_agent"; agentId: string }
+  | { type: "unsubscribe_agent"; agentId: string };
 
 export interface AgentDisplayMessage {
   type: "thinking" | "tool_call" | "send_to_main" | "user_message" | "system";
@@ -81,6 +83,7 @@ type ServerMessage =
         error?: string;
       }>;
     }
+  | { type: "agent_detail"; agentId: string; displayMessages: AgentDisplayMessage[] }
   | { type: "compact_start" }
   | { type: "compact_complete" };
 
@@ -273,13 +276,23 @@ export function useWebSocket() {
         break;
       }
 
-      case "agent_message":
-        const agent = agents.value.get(message.agentId);
-        if (agent) {
-          agent.displayMessages.push(message.message);
+      case "agent_message": {
+        const msgAgent = agents.value.get(message.agentId);
+        if (msgAgent) {
+          msgAgent.displayMessages.push(message.message);
           agents.value = new Map(agents.value); // Trigger reactivity
         }
         break;
+      }
+
+      case "agent_detail": {
+        const detailAgent = agents.value.get(message.agentId);
+        if (detailAgent) {
+          detailAgent.displayMessages = message.displayMessages;
+          agents.value = new Map(agents.value); // Trigger reactivity
+        }
+        break;
+      }
 
       case "agent_completed":
         console.log("Agent completed:", message.agentId);
@@ -395,6 +408,14 @@ export function useWebSocket() {
     send({ type: "compact_context" });
   }
 
+  function subscribeAgent(agentId: string) {
+    send({ type: "subscribe_agent", agentId });
+  }
+
+  function unsubscribeAgent(agentId: string) {
+    send({ type: "unsubscribe_agent", agentId });
+  }
+
   function disconnect() {
     if (reconnectTimeout) {
       clearTimeout(reconnectTimeout);
@@ -438,6 +459,8 @@ export function useWebSocket() {
     getMcpStatus,
     removeQueuedMessage,
     compactContext,
+    subscribeAgent,
+    unsubscribeAgent,
     disconnect,
   };
 }

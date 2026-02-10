@@ -66,6 +66,8 @@ const {
   getMcpStatus: wsGetMcpStatus,
   removeQueuedMessage: wsRemoveQueuedMessage,
   compactContext: wsCompactContext,
+  subscribeAgent: wsSubscribeAgent,
+  unsubscribeAgent: wsUnsubscribeAgent,
 } = useWebSocket();
 
 provideConfig({
@@ -205,10 +207,14 @@ provideSlashCommands({
 });
 
 async function openAgentDetail(agentId: string) {
+  wsSubscribeAgent(agentId);
   selectedAgent.value = agentId;
 }
 
 function closeAgentDetail() {
+  if (selectedAgent.value) {
+    wsUnsubscribeAgent(selectedAgent.value);
+  }
   selectedAgent.value = null;
 }
 
@@ -298,6 +304,7 @@ watch(
   () => {
     if (selectedAgent.value) {
       if (!agents.value.has(selectedAgent.value)) {
+        wsUnsubscribeAgent(selectedAgent.value);
         selectedAgent.value = null;
       }
     }

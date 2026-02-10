@@ -35,7 +35,9 @@ export type ClientMessage =
   | { type: "send_to_agent"; agentId: string; message: string }
   | { type: "get_mcp_status" }
   | { type: "remove_queued"; timestamp: number }
-  | { type: "compact_context" };
+  | { type: "compact_context" }
+  | { type: "subscribe_agent"; agentId: string }
+  | { type: "unsubscribe_agent"; agentId: string };
 
 // Server -> Client messages
 export type ServerMessage =
@@ -58,5 +60,6 @@ export type ServerMessage =
   | { type: "agent_removed"; agentId: string }
   | { type: "queue_update"; queuedMessages: Array<{ content: string; timestamp: number }> }
   | { type: "mcp_status"; servers: Array<{ name: string; status: string; toolCount: number; description?: string; error?: string }> }
+  | { type: "agent_detail"; agentId: string; displayMessages: AgentDisplayMessage[] }
   | { type: "compact_start" }
   | { type: "compact_complete" };

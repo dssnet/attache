@@ -5,11 +5,12 @@ import { loadContext, addMessage, clearContext, addToolCall, saveContext } from 
 import { streamMessage } from "./ai.ts";
 import { loadConfig, saveConfig } from "./config.ts";
 import { shouldAutoCompact, compactMessages } from "./compact.ts";
-import { setAgentEventCallback, clearAllAgents, getAllAgentsInfo, sendToAgent } from "./agent.ts";
+import { setAgentEventCallback, clearAllAgents, getAllAgentsInfo, getAgentDetail, sendToAgent } from "./agent.ts";
 
 interface WebSocketData {
   authenticated: boolean;
   clientId: string;
+  subscribedAgentId: string | null;
 }
 
 const clients = new Set<ServerWebSocket<WebSocketData>>();
@@ -215,7 +216,13 @@ setAgentEventCallback({
     broadcast({ type: "agent_resumed", agentId });
   },
   onAgentMessage: (agentId, message) => {
-    broadcast({ type: "agent_message", agentId, message });
+    // Only send to clients subscribed to this agent's detail view
+    const snapshot = [...clients];
+    for (const client of snapshot) {
+      if (client.data.authenticated && client.data.subscribedAgentId === agentId) {
+        sendToClient(client, { type: "agent_message", agentId, message });
+      }
+    }
   },
   onAgentCompleted: (agentId, output) => {
     broadcast({ type: "agent_completed", agentId, output });
@@ -346,17 +353,10 @@ async function handleClientMessage(
           queuedMessages: getUserQueuedMessages(),
         });
 
-        // Send all existing agents to the new client
+        // Send lightweight agent metadata (no displayMessages — client subscribes when opening detail modal)
         const existingAgents = getAllAgentsInfo();
         for (const agent of existingAgents) {
           sendToClient(ws, { type: "agent_started", agentId: agent.id, task: agent.task });
-
-          // Send all agent display messages
-          for (const msg of agent.displayMessages) {
-            sendToClient(ws, { type: "agent_message", agentId: agent.id, message: msg });
-          }
-
-          // Send completion status if completed
           if (agent.status === "completed") {
             sendToClient(ws, { type: "agent_completed", agentId: agent.id, output: "" });
           }
@@ -506,6 +506,22 @@ async function handleClientMessage(
           type: "error",
           error: error instanceof Error ? error.message : "Failed to compact context",
         });
+      }
+      break;
+    }
+
+    case "subscribe_agent": {
+      ws.data.subscribedAgentId = message.agentId;
+      const detail = getAgentDetail(message.agentId);
+      if (detail) {
+        sendToClient(ws, { type: "agent_detail", agentId: detail.id, displayMessages: detail.displayMessages });
+      }
+      break;
+    }
+
+    case "unsubscribe_agent": {
+      if (ws.data.subscribedAgentId === message.agentId) {
+        ws.data.subscribedAgentId = null;
       }
       break;
     }

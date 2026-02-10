@@ -36,6 +36,7 @@ export async function startServer() {
           data: {
             authenticated: false,
             clientId: crypto.randomUUID(),
+            subscribedAgentId: null,
           },
         });
         if (upgraded) {
