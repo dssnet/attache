@@ -83,16 +83,31 @@ function validateCommand(command: string, config: Config): void {
 /**
  * Creates a downloadable file and returns the URL path.
  */
-async function handleCreateDownload(input: { filename: string; content: string }): Promise<string> {
+async function handleCreateDownload(input: { filename: string; content?: string; file?: string }): Promise<string> {
   const filename = input.filename?.trim();
-  const content = input.content ?? "";
   if (!filename) {
     return JSON.stringify({ success: false, error: "filename is required" });
   }
+  if (!input.content && !input.file) {
+    return JSON.stringify({ success: false, error: "Either content or file is required" });
+  }
+
   const id = crypto.randomUUID().slice(0, 8);
   const dir = join(DOWNLOADS_DIR, id);
   await mkdir(dir, { recursive: true });
-  await writeFile(join(dir, filename), content, "utf-8");
+
+  if (input.file) {
+    // Copy file from disk
+    try {
+      const source = await readFile(input.file);
+      await writeFile(join(dir, filename), source);
+    } catch (error: any) {
+      return JSON.stringify({ success: false, error: `Failed to read file: ${error.message}` });
+    }
+  } else {
+    await writeFile(join(dir, filename), input.content!, "utf-8");
+  }
+
   const url = `/api/downloads/${id}/${encodeURIComponent(filename)}`;
   return JSON.stringify({ success: true, url, filename });
 }
@@ -409,7 +424,7 @@ export function createAgentTools(config: Config, ctx: AgentToolContext): ToolReg
     create_download: {
       definition: tool({
         description:
-          "Creates a file available for download and returns a URL. Use this when the user asks you to generate a file (CSV, JSON, text, code, etc.) for download. Include the returned URL as a markdown link in your message to main, e.g. [Download filename](url).",
+          "Creates a file available for download and returns a URL. Use this when the user asks you to generate or provide a file for download. You can either pass file content directly via 'content', or copy an existing file from disk via 'file'. Include the returned URL as a markdown link in your message to main, e.g. [Download filename](url).",
         inputSchema: jsonSchema({
           type: "object",
           properties: {
@@ -419,10 +434,14 @@ export function createAgentTools(config: Config, ctx: AgentToolContext): ToolReg
             },
             content: {
               type: "string",
-              description: "The file content as text",
+              description: "The file content as text. Use this for generated content.",
+            },
+            file: {
+              type: "string",
+              description: "Absolute path to an existing file on disk to make available for download. Use this instead of content when the file already exists.",
             },
           },
-          required: ["filename", "content"],
+          required: ["filename"],
         }),
       }),
       handler: handleCreateDownload,
