@@ -9,8 +9,7 @@
     "attache": "src/cli/index.ts"
   },
   "scripts": {
-    "start": "bun run src/backend/index.ts",
-    "dev": "bun --watch src/backend/index.ts & vite",
+    "dev": "concurrently -n backend,frontend -c blue,green \"bun run dev:backend\" \"bun run dev:frontend\"",
     "dev:backend": "bun --watch src/backend/index.ts",
     "dev:frontend": "vite",
     "build:frontend": "vite build",
@@ -20,6 +19,7 @@
     "@types/bun": "latest",
     "@types/markdown-it": "^14.1.2",
     "@vitejs/plugin-vue": "^6.0.3",
+    "concurrently": "^9.2.1",
     "typescript": "latest",
     "vite": "^7.3.1",
     "vite-plugin-pwa": "^1.2.0"
