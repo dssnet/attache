@@ -37,7 +37,8 @@ export type ClientMessage =
   | { type: "remove_queued"; timestamp: number }
   | { type: "compact_context" }
   | { type: "subscribe_agent"; agentId: string }
-  | { type: "unsubscribe_agent"; agentId: string };
+  | { type: "unsubscribe_agent"; agentId: string }
+  | { type: "restart_server" };
 
 // Server -> Client messages
 export type ServerMessage =

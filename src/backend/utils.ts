@@ -23,3 +23,12 @@ export function expandHome(p: string): string {
   return p;
 }
 
+/**
+ * Restarts the server by exiting the process.
+ * In production, systemd (Restart=always) handles the restart.
+ * In dev, the restart loop in dev:backend handles it.
+ */
+export function triggerRestart() {
+  setTimeout(() => process.exit(0), 1000);
+}
+

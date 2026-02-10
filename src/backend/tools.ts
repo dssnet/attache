@@ -13,6 +13,7 @@ import {
 import { mkdir, writeFile, readFile, readdir, unlink, stat, rm } from "node:fs/promises";
 import { join, resolve, normalize } from "node:path";
 import { homedir } from "node:os";
+import { triggerRestart } from "./utils.ts";
 import { expandHome } from "./utils.ts";
 import type { AgentDisplayMessage } from "./types.ts";
 
@@ -362,10 +363,7 @@ export function createAgentTools(config: Config, ctx: AgentToolContext): ToolReg
         inputSchema: jsonSchema({ type: "object", properties: {} }),
       }),
       handler: async () => {
-        setTimeout(() => {
-          console.log("Restarting server...");
-          process.exit(0);
-        }, 1000);
+        triggerRestart();
         return JSON.stringify({ success: true, message: "Server will restart in 1 second" });
       },
     },

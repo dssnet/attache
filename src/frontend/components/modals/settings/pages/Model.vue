@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, computed, nextTick } from "vue";
-import { Eye, EyeOff, Plus, Trash2, Check, Save, Pencil, Copy } from "lucide-vue-next";
+import { Eye, EyeOff, Plus, Trash2, Check, Save, Pencil, Copy, RotateCw } from "lucide-vue-next";
 import Button from "../../../ui/Button.vue";
 import Input from "../../../ui/Input.vue";
 import Dropdown from "../../../ui/Dropdown.vue";
@@ -22,7 +22,7 @@ interface ProviderForm {
   temperature: number;
 }
 
-const { config, configSaving, updateConfig } = useConfig();
+const { config, configSaving, updateConfig, restartServer } = useConfig();
 
 const providers = ref<Record<string, ProviderForm>>({});
 const defaultProvider = ref("");
@@ -211,6 +211,11 @@ function save() {
     ...config.value,
     ...buildConfig(),
   });
+}
+
+function saveAndRestart() {
+  save();
+  setTimeout(() => restartServer(), 500);
 }
 </script>
 
@@ -401,16 +406,28 @@ function save() {
         >You have unsaved changes</span
       >
       <span v-else></span>
-      <Button
-        variant="primary"
-        :disabled="!hasChanges"
-        :loading="configSaving"
-        class="flex items-center gap-2"
-        @click="save"
-      >
-        <Save :size="16" />
-        Save Changes
-      </Button>
+      <div class="flex items-center gap-2">
+        <Button
+          variant="primary"
+          :disabled="!hasChanges"
+          :loading="configSaving"
+          class="flex items-center gap-2"
+          @click="save"
+        >
+          <Save :size="16" />
+          Save
+        </Button>
+        <Button
+          variant="ghost"
+          :disabled="!hasChanges"
+          :loading="configSaving"
+          class="flex items-center gap-2"
+          @click="saveAndRestart"
+        >
+          <RotateCw :size="16" />
+          Save & Restart
+        </Button>
+      </div>
     </ModalFooter>
   </div>
 </template>

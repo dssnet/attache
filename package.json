@@ -10,7 +10,7 @@
   },
   "scripts": {
     "dev": "concurrently -n backend,frontend -c blue,green \"bun run dev:backend\" \"bun run dev:frontend\"",
-    "dev:backend": "bun --watch src/backend/index.ts",
+    "dev:backend": "while bun --watch src/backend/index.ts; do sleep 1; done",
     "dev:frontend": "vite",
     "build:frontend": "vite build",
     "build": "bun run build:frontend"

@@ -417,6 +417,10 @@ export function useWebSocket() {
     send({ type: "unsubscribe_agent", agentId });
   }
 
+  function restartServer() {
+    send({ type: "restart_server" });
+  }
+
   function disconnect() {
     if (reconnectTimeout) {
       clearTimeout(reconnectTimeout);
@@ -462,6 +466,7 @@ export function useWebSocket() {
     compactContext,
     subscribeAgent,
     unsubscribeAgent,
+    restartServer,
     disconnect,
   };
 }

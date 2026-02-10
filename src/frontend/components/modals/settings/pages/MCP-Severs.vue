@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, computed } from "vue";
-import { Eye, EyeOff, Plus, Trash2, Check, Save } from "lucide-vue-next";
+import { Eye, EyeOff, Plus, Trash2, Check, Save, RotateCw } from "lucide-vue-next";
 import Button from "../../../ui/Button.vue";
 import Input from "../../../ui/Input.vue";
 import Dropdown from "../../../ui/Dropdown.vue";
@@ -29,7 +29,7 @@ interface McpServerForm {
   oauthScopes: string;
 }
 
-const { config, configSaving, updateConfig, mcpStatus } = useConfig();
+const { config, configSaving, updateConfig, mcpStatus, restartServer } = useConfig();
 
 const mcpServers = ref<Record<string, McpServerForm>>({});
 const selectedMcpServer = ref<string | null>(null);
@@ -220,6 +220,11 @@ function save() {
     ...config.value,
     ...buildConfig(),
   });
+}
+
+function saveAndRestart() {
+  save();
+  setTimeout(() => restartServer(), 500);
 }
 </script>
 
@@ -463,16 +468,28 @@ function save() {
         >You have unsaved changes</span
       >
       <span v-else></span>
-      <Button
-        variant="primary"
-        :disabled="!hasChanges"
-        :loading="configSaving"
-        class="flex items-center gap-2"
-        @click="save"
-      >
-        <Save :size="16" />
-        Save Changes
-      </Button>
+      <div class="flex items-center gap-2">
+        <Button
+          variant="primary"
+          :disabled="!hasChanges"
+          :loading="configSaving"
+          class="flex items-center gap-2"
+          @click="save"
+        >
+          <Save :size="16" />
+          Save
+        </Button>
+        <Button
+          variant="ghost"
+          :disabled="!hasChanges"
+          :loading="configSaving"
+          class="flex items-center gap-2"
+          @click="saveAndRestart"
+        >
+          <RotateCw :size="16" />
+          Save & Restart
+        </Button>
+      </div>
     </ModalFooter>
   </div>
 </template>

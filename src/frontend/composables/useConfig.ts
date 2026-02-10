@@ -67,6 +67,7 @@ export interface ConfigContext {
   getConfig: () => void;
   updateConfig: (partial: Partial<Config>) => void;
   getMcpStatus: () => void;
+  restartServer: () => void;
 }
 
 const CONFIG_KEY: InjectionKey<ConfigContext> = Symbol("config");

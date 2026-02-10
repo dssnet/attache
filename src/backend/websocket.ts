@@ -6,6 +6,7 @@ import { streamMessage } from "./ai.ts";
 import { loadConfig, saveConfig } from "./config.ts";
 import { shouldAutoCompact, compactMessages } from "./compact.ts";
 import { setAgentEventCallback, clearAllAgents, getAllAgentsInfo, getAgentDetail, sendToAgent } from "./agent.ts";
+import { triggerRestart } from "./utils.ts";
 
 interface WebSocketData {
   authenticated: boolean;
@@ -528,6 +529,12 @@ async function handleClientMessage(
       if (ws.data.subscribedAgentId === message.agentId) {
         ws.data.subscribedAgentId = null;
       }
+      break;
+    }
+
+    case "restart_server": {
+      console.log("Restart requested by client");
+      await triggerRestart();
       break;
     }
   }

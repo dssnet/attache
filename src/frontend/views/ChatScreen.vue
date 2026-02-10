@@ -68,6 +68,7 @@ const {
   compactContext: wsCompactContext,
   subscribeAgent: wsSubscribeAgent,
   unsubscribeAgent: wsUnsubscribeAgent,
+  restartServer: wsRestartServer,
 } = useWebSocket();
 
 provideConfig({
@@ -77,6 +78,7 @@ provideConfig({
   getConfig: wsGetConfig,
   updateConfig: wsUpdateConfig,
   getMcpStatus: wsGetMcpStatus,
+  restartServer: wsRestartServer,
 });
 
 // Filter out empty assistant messages
