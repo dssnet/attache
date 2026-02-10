@@ -20,10 +20,19 @@ type ClientMessage =
   | { type: "remove_queued"; timestamp: number }
   | { type: "compact_context" };
 
+export interface AgentDisplayMessage {
+  type: "thinking" | "tool_call" | "send_to_main" | "user_message" | "system";
+  content: string;
+  toolName?: string;
+  toolInput?: Record<string, any>;
+  toolOutput?: string;
+  timestamp: number;
+}
+
 interface Agent {
   id: string;
   task: string;
-  messages: string[];
+  displayMessages: AgentDisplayMessage[];
   status: "running" | "completed";
 }
 
@@ -54,7 +63,7 @@ type ServerMessage =
   | { type: "context_cleared" }
   | { type: "agent_started"; agentId: string; task: string }
   | { type: "agent_resumed"; agentId: string }
-  | { type: "agent_message"; agentId: string; message: string }
+  | { type: "agent_message"; agentId: string; message: AgentDisplayMessage }
   | { type: "agent_completed"; agentId: string; output: string }
   | { type: "agent_removed"; agentId: string }
   | {
@@ -245,7 +254,7 @@ export function useWebSocket() {
         agents.value.set(message.agentId, {
           id: message.agentId,
           task: message.task,
-          messages: [],
+          displayMessages: [],
           status: "running",
         });
         agents.value = new Map(agents.value); // Trigger reactivity
@@ -267,7 +276,7 @@ export function useWebSocket() {
       case "agent_message":
         const agent = agents.value.get(message.agentId);
         if (agent) {
-          agent.messages.push(message.message);
+          agent.displayMessages.push(message.message);
           agents.value = new Map(agents.value); // Trigger reactivity
         }
         break;

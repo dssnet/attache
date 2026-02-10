@@ -14,6 +14,7 @@ import { mkdir, writeFile, readFile, readdir, unlink, stat, rm } from "node:fs/p
 import { join, resolve, normalize } from "node:path";
 import { homedir } from "node:os";
 import { expandHome } from "./utils.ts";
+import type { AgentDisplayMessage } from "./types.ts";
 
 const DOWNLOADS_DIR = join(homedir(), ".attache", "downloads");
 
@@ -287,9 +288,9 @@ export function createMainTools(config: Config): ToolRegistry {
 export interface AgentToolContext {
   agentId: string;
   messagesToMain: string[];
-  onAgentMessage?: (agentId: string, message: string) => void;
+  onAgentMessage?: (agentId: string, message: AgentDisplayMessage) => void;
   onSendToMain?: (message: string, agentId: string) => void;
-  agentMessages: string[];
+  agentDisplayMessages: AgentDisplayMessage[];
   updateActivityTime: () => void;
 }
 
@@ -447,10 +448,11 @@ export function createAgentTools(config: Config, ctx: AgentToolContext): ToolReg
           return JSON.stringify({ success: true, message: "Message already sent to main context" });
         }
         ctx.messagesToMain.push(message);
-        ctx.agentMessages.push(message);
+        const displayMsg: AgentDisplayMessage = { type: "send_to_main", content: message, timestamp: Date.now() };
+        ctx.agentDisplayMessages.push(displayMsg);
         ctx.updateActivityTime();
         if (ctx.onAgentMessage) {
-          ctx.onAgentMessage(ctx.agentId, message);
+          ctx.onAgentMessage(ctx.agentId, displayMsg);
         }
         try {
           if (ctx.onSendToMain) {
@@ -804,13 +806,14 @@ export function createAgentTools(config: Config, ctx: AgentToolContext): ToolReg
     if (name === "send_to_main") continue;
     const originalHandler = entry.handler;
     entry.handler = async (args: any) => {
-      const toolDesc = `🔧 Tool: ${name}`;
-      ctx.agentMessages.push(toolDesc);
+      const result = await originalHandler(args);
+      const msg: AgentDisplayMessage = { type: "tool_call", content: name, toolName: name, toolInput: args, toolOutput: result, timestamp: Date.now() };
+      ctx.agentDisplayMessages.push(msg);
       ctx.updateActivityTime();
       if (ctx.onAgentMessage) {
-        ctx.onAgentMessage(ctx.agentId, toolDesc);
+        ctx.onAgentMessage(ctx.agentId, msg);
       }
-      return originalHandler(args);
+      return result;
     };
   }
 

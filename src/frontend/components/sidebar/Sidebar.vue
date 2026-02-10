@@ -3,6 +3,7 @@ import { Settings, LogOut } from "lucide-vue-next";
 import SidebarHeader from "./SidebarHeader.vue";
 import AgentsList from "../agents/AgentsList.vue";
 import Button from "../ui/Button.vue";
+import type { AgentDisplayMessage } from "../../composables/useWebSocket";
 
 const isTauri = !!(window as any).__TAURI__;
 
@@ -18,7 +19,7 @@ defineProps<{
     id: string;
     task: string;
     status: "running" | "completed";
-    messages: string[];
+    displayMessages: AgentDisplayMessage[];
   }>;
 }>();
 

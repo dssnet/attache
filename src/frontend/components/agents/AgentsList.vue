@@ -2,13 +2,14 @@
 import { Trash2 } from "lucide-vue-next";
 import AgentItem from "./AgentItem.vue";
 import Button from "../ui/Button.vue";
+import type { AgentDisplayMessage } from "../../composables/useWebSocket";
 
 defineProps<{
   agents: Array<{
     id: string;
     task: string;
     status: "running" | "completed";
-    messages: string[];
+    displayMessages: AgentDisplayMessage[];
   }>;
 }>();
 

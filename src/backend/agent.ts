@@ -8,6 +8,7 @@ import { createAgentTools, getToolDefinitions, executeRegistryTool, type AgentTo
 import { shouldAutoCompactAgent, compactAgentMessages } from "./compact.ts";
 import { homedir } from "node:os";
 import { expandHome } from "./utils.ts";
+import type { AgentDisplayMessage } from "./types.ts";
 
 export interface AgentMessage {
   role: "user" | "assistant";
@@ -24,7 +25,7 @@ export interface AgentResult {
 export interface AgentEventCallback {
   onAgentStarted?: (agentId: string, task: string) => void;
   onAgentResumed?: (agentId: string) => void;
-  onAgentMessage?: (agentId: string, message: string) => void;
+  onAgentMessage?: (agentId: string, message: AgentDisplayMessage) => void;
   onAgentCompleted?: (agentId: string, output: string) => void;
   onAgentRemoved?: (agentId: string) => void;
   onSendToMain?: (message: string, agentId: string) => void;
@@ -36,10 +37,75 @@ interface ActiveAgent {
   task: string;
   status: "running" | "completed";
   lastActivityTime: number;
-  messages: string[];
+  displayMessages: AgentDisplayMessage[];
   conversationHistory?: any[];
   systemPrompt?: string;
   providerType?: string;
+}
+
+function pushDisplayMessage(agent: ActiveAgent, msg: AgentDisplayMessage) {
+  agent.displayMessages.push(msg);
+  agent.lastActivityTime = Date.now();
+  if (agentEventCallback.onAgentMessage) {
+    agentEventCallback.onAgentMessage(agent.id, msg);
+  }
+}
+
+function deriveDisplayMessages(conversationHistory: any[]): AgentDisplayMessage[] {
+  const result: AgentDisplayMessage[] = [];
+  // Collect pending tool calls from assistant messages to merge with their results
+  const pendingToolCalls = new Map<string, AgentDisplayMessage>();
+
+  for (let i = 0; i < conversationHistory.length; i++) {
+    const msg = conversationHistory[i];
+
+    if (msg.role === "user") {
+      const content = typeof msg.content === "string" ? msg.content : "";
+      if (content.startsWith("[Message from main assistant]: ")) {
+        result.push({ type: "user_message", content: content.replace("[Message from main assistant]: ", ""), timestamp: 0 });
+      }
+      // Skip initial task message and system restart messages (shown in modal header)
+      continue;
+    }
+
+    if (msg.role === "assistant") {
+      if (typeof msg.content === "string") {
+        if (msg.content.trim()) {
+          result.push({ type: "thinking", content: msg.content.trim(), timestamp: 0 });
+        }
+      } else if (Array.isArray(msg.content)) {
+        for (const part of msg.content) {
+          if (part.type === "text" && part.text?.trim()) {
+            result.push({ type: "thinking", content: part.text.trim(), timestamp: 0 });
+          }
+          if (part.type === "tool-call") {
+            if (part.toolName === "send_to_main") {
+              result.push({ type: "send_to_main", content: part.input?.message || "", timestamp: 0 });
+            } else {
+              const displayMsg: AgentDisplayMessage = { type: "tool_call", content: part.toolName, toolName: part.toolName, toolInput: part.input, timestamp: 0 };
+              result.push(displayMsg);
+              pendingToolCalls.set(part.toolCallId, displayMsg);
+            }
+          }
+        }
+      }
+    }
+
+    if (msg.role === "tool" && Array.isArray(msg.content)) {
+      for (const part of msg.content) {
+        if (part.type === "tool-result") {
+          const output = typeof part.output === "string" ? part.output : part.output?.value || "";
+          // Merge output into the matching tool_call message
+          const pending = pendingToolCalls.get(part.toolCallId);
+          if (pending) {
+            pending.toolOutput = output;
+            pendingToolCalls.delete(part.toolCallId);
+          }
+        }
+      }
+    }
+  }
+  return result;
 }
 
 // Global event callback
@@ -69,7 +135,9 @@ async function ensureAgentsDir() {
 async function saveAgentToDisk(agent: ActiveAgent) {
   await ensureAgentsDir();
   const filePath = join(AGENTS_DIR, `${agent.id}.json`);
-  await writeFile(filePath, JSON.stringify(agent, null, 2));
+  // Exclude displayMessages from disk — it's derived from conversationHistory on load
+  const { displayMessages, ...toSave } = agent;
+  await writeFile(filePath, JSON.stringify(toSave, null, 2));
 }
 
 async function deleteAgentFromDisk(agentId: string) {
@@ -93,13 +161,15 @@ async function loadAgentsFromDisk() {
           const filePath = join(AGENTS_DIR, file);
           const content = await readFile(filePath, "utf-8");
           const agent: ActiveAgent = JSON.parse(content);
+          // Derive displayMessages from conversationHistory (not persisted to disk)
+          agent.displayMessages = deriveDisplayMessages(agent.conversationHistory || []);
           activeAgents.set(agent.id, agent);
           console.log(`Loaded agent from disk: ${agent.id} (${agent.status})`);
           if (agentEventCallback.onAgentStarted) {
             agentEventCallback.onAgentStarted(agent.id, agent.task);
           }
           if (agentEventCallback.onAgentMessage) {
-            for (const message of agent.messages || []) {
+            for (const message of agent.displayMessages) {
               agentEventCallback.onAgentMessage(agent.id, message);
             }
           }
@@ -149,14 +219,9 @@ export async function resumeRunningAgents(config: Config): Promise<void> {
   for (const agent of runningAgents) {
     console.log(`Resuming agent ${agent.id}: ${agent.task}`);
 
-    const resumeMsg = "⚡ Resumed after server restart";
-    agent.messages.push(resumeMsg);
     agent.lastActivityTime = Date.now();
     agent.incomingMessages = [];
-
-    if (agentEventCallback.onAgentMessage) {
-      agentEventCallback.onAgentMessage(agent.id, resumeMsg);
-    }
+    pushDisplayMessage(agent, { type: "system", content: "Resumed after server restart", timestamp: Date.now() });
     if (agentEventCallback.onAgentResumed) {
       agentEventCallback.onAgentResumed(agent.id);
     }
@@ -178,10 +243,7 @@ export async function resumeRunningAgents(config: Config): Promise<void> {
         if (messagesToMain.length === 0) {
           const autoMessage = `[Agent resumed task "${agent.task}" but did not send back a report.]`;
           messagesToMain.push(autoMessage);
-          agent.messages.push(autoMessage);
-          if (agentEventCallback.onAgentMessage) {
-            agentEventCallback.onAgentMessage(agent.id, autoMessage);
-          }
+          pushDisplayMessage(agent, { type: "system", content: autoMessage, timestamp: Date.now() });
           try {
             if (agentEventCallback.onSendToMain) {
               agentEventCallback.onSendToMain(autoMessage, agent.id);
@@ -236,12 +298,12 @@ export function getActiveAgents(): string[] {
   return Array.from(activeAgents.keys());
 }
 
-export function getAllAgentsInfo(): Array<{ id: string; task: string; status: "running" | "completed"; messages: string[] }> {
+export function getAllAgentsInfo(): Array<{ id: string; task: string; status: "running" | "completed"; displayMessages: AgentDisplayMessage[] }> {
   return Array.from(activeAgents.values()).map(agent => ({
     id: agent.id,
     task: agent.task,
     status: agent.status,
-    messages: agent.messages,
+    displayMessages: agent.displayMessages,
   }));
 }
 
@@ -315,7 +377,7 @@ async function runAgentLoop(
     messagesToMain,
     onAgentMessage: agentEventCallback.onAgentMessage,
     onSendToMain: agentEventCallback.onSendToMain,
-    agentMessages: agent.messages,
+    agentDisplayMessages: agent.displayMessages,
     updateActivityTime: () => { agent.lastActivityTime = Date.now(); },
   };
 
@@ -374,12 +436,7 @@ async function runAgentLoop(
 
       // Log text output from the agent
       if (currentText.trim()) {
-        const message = `💭 ${currentText.trim()}`;
-        agent.messages.push(message);
-        agent.lastActivityTime = Date.now();
-        if (agentEventCallback.onAgentMessage) {
-          agentEventCallback.onAgentMessage(agent.id, message);
-        }
+        pushDisplayMessage(agent, { type: "thinking", content: currentText.trim(), timestamp: Date.now() });
       }
 
       // No tool calls — this cycle is done
@@ -428,20 +485,12 @@ async function runAgentLoop(
 
       // Auto-compact agent conversation if approaching token limit
       if (shouldAutoCompactAgent(messages, provider.maxTokens)) {
-        const compactMsg = `🗜️ Auto-compacting conversation (${messages.length} messages)...`;
-        agent.messages.push(compactMsg);
-        if (agentEventCallback.onAgentMessage) {
-          agentEventCallback.onAgentMessage(agent.id, compactMsg);
-        }
+        pushDisplayMessage(agent, { type: "system", content: `Auto-compacting conversation (${messages.length} messages)...`, timestamp: Date.now() });
         try {
           messages = await compactAgentMessages(provider, messages);
         } catch (err) {
           console.error(`Agent ${agent.id} compaction failed:`, err);
-          const errMsg = `⚠️ Compaction failed, continuing with truncated history`;
-          agent.messages.push(errMsg);
-          if (agentEventCallback.onAgentMessage) {
-            agentEventCallback.onAgentMessage(agent.id, errMsg);
-          }
+          pushDisplayMessage(agent, { type: "system", content: "Compaction failed, continuing with truncated history", timestamp: Date.now() });
           // Keep only the first message (task) and the last few messages
           const first = messages[0];
           const recent = messages.slice(-6);
@@ -499,7 +548,7 @@ export async function runAgent(
     task: trimmedTask,
     status: "running",
     lastActivityTime: Date.now(),
-    messages: [],
+    displayMessages: [],
   };
   activeAgents.set(agentId, agent);
 
@@ -522,10 +571,7 @@ export async function runAgent(
     if (messagesToMain.length === 0) {
       const autoMessage = `[Agent completed task "${trimmedTask}" but did not send back a report. You can use send_to_agent to ask it for results.]`;
       messagesToMain.push(autoMessage);
-      agent.messages.push(autoMessage);
-      if (agentEventCallback.onAgentMessage) {
-        agentEventCallback.onAgentMessage(agentId, autoMessage);
-      }
+      pushDisplayMessage(agent, { type: "system", content: autoMessage, timestamp: Date.now() });
       try {
         if (agentEventCallback.onSendToMain) {
           agentEventCallback.onSendToMain(autoMessage, agentId);
@@ -577,11 +623,7 @@ export async function resumeAgent(
   agent.lastActivityTime = Date.now();
   agent.incomingMessages = [];
 
-  const resumeMessage = `📩 Message from main: ${message}`;
-  agent.messages.push(resumeMessage);
-  if (agentEventCallback.onAgentMessage) {
-    agentEventCallback.onAgentMessage(agentId, resumeMessage);
-  }
+  pushDisplayMessage(agent, { type: "user_message", content: message, timestamp: Date.now() });
   if (agentEventCallback.onAgentResumed) {
     agentEventCallback.onAgentResumed(agentId);
   }
@@ -604,10 +646,7 @@ export async function resumeAgent(
     if (messagesToMain.length === 0) {
       const autoMessage = `[Agent completed follow-up on "${agent.task}" but did not send back a report. You can use send_to_agent to ask it for results.]`;
       messagesToMain.push(autoMessage);
-      agent.messages.push(autoMessage);
-      if (agentEventCallback.onAgentMessage) {
-        agentEventCallback.onAgentMessage(agentId, autoMessage);
-      }
+      pushDisplayMessage(agent, { type: "system", content: autoMessage, timestamp: Date.now() });
       try {
         if (agentEventCallback.onSendToMain) {
           agentEventCallback.onSendToMain(autoMessage, agentId);

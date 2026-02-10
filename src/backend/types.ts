@@ -6,6 +6,15 @@ export interface Message {
   timestamp: number;
 }
 
+export interface AgentDisplayMessage {
+  type: "thinking" | "tool_call" | "send_to_main" | "user_message" | "system";
+  content: string;
+  toolName?: string;
+  toolInput?: Record<string, any>;
+  toolOutput?: string;
+  timestamp: number;
+}
+
 export interface ToolCall {
   toolName: string;
   toolInput: Record<string, any>;
@@ -44,7 +53,7 @@ export type ServerMessage =
   | { type: "config_updated"; success: boolean }
   | { type: "agent_started"; agentId: string; task: string }
   | { type: "agent_resumed"; agentId: string }
-  | { type: "agent_message"; agentId: string; message: string }
+  | { type: "agent_message"; agentId: string; message: AgentDisplayMessage }
   | { type: "agent_completed"; agentId: string; output: string }
   | { type: "agent_removed"; agentId: string }
   | { type: "queue_update"; queuedMessages: Array<{ content: string; timestamp: number }> }

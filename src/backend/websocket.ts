@@ -351,8 +351,8 @@ async function handleClientMessage(
         for (const agent of existingAgents) {
           sendToClient(ws, { type: "agent_started", agentId: agent.id, task: agent.task });
 
-          // Send all agent messages
-          for (const msg of agent.messages) {
+          // Send all agent display messages
+          for (const msg of agent.displayMessages) {
             sendToClient(ws, { type: "agent_message", agentId: agent.id, message: msg });
           }
 

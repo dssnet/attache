@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import type { AgentDisplayMessage } from "../../composables/useWebSocket";
+
 defineProps<{
   agent: {
     id: string;
     task: string;
     status: "running" | "completed";
-    messages: string[];
+    displayMessages: AgentDisplayMessage[];
   };
 }>();
 
