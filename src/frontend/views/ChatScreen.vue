@@ -141,11 +141,30 @@ function sendAgentMessage(agentId: string, message: string) {
 }
 
 function copyToClipboard() {
-  const chatText = visibleMessages.value
-    .map((msg) => {
-      const role = msg.role === "user" ? "User" : "Assistant";
-      return `# ${role}\n${msg.content}`;
+  const chatText = messages.value
+    .map((msg, index) => {
+      if (msg.role === "user") {
+        return `# User\n${msg.content}`;
+      }
+
+      const msgToolCalls = toolCalls.value
+        .filter((tc) => tc.messageIndex === index)
+        .sort((a, b) => a.contentPosition - b.contentPosition);
+
+      let parts: string[] = [];
+      if (msg.content?.trim()) {
+        parts.push(msg.content);
+      }
+      for (const tc of msgToolCalls) {
+        parts.push(`[Tool: ${tc.toolName}]\nInput: ${JSON.stringify(tc.toolInput, null, 2)}`);
+      }
+
+      if (parts.length === 0) return null;
+
+      const role = msg.role === "agent" ? "Agent" : "Assistant";
+      return `# ${role}\n${parts.join("\n\n")}`;
     })
+    .filter(Boolean)
     .join("\n\n");
 
   if (navigator.clipboard && navigator.clipboard.writeText) {
