@@ -14,9 +14,7 @@
     "dev:backend": "bun --watch src/backend/index.ts",
     "dev:frontend": "vite",
     "build:frontend": "vite build",
-    "build": "bun run build:frontend",
-    "app:dev": "cd attache-app && npx tauri dev",
-    "app:build": "cd attache-app && npx tauri build"
+    "build": "bun run build:frontend"
   },
   "devDependencies": {
     "@types/bun": "latest",
