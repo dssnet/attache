@@ -68,6 +68,7 @@ const {
   compactContext: wsCompactContext,
   subscribeAgent: wsSubscribeAgent,
   unsubscribeAgent: wsUnsubscribeAgent,
+  stopGeneration: wsStopGeneration,
   restartServer: wsRestartServer,
 } = useWebSocket();
 
@@ -211,7 +212,7 @@ function fallbackCopy(text: string) {
 provideSlashCommands({
   stop: {
     description: "Stop the current process",
-    run: () => console.log("stop"),
+    run: () => wsStopGeneration(),
   },
   clear: {
     description: "Clear conversation history",

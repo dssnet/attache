@@ -65,6 +65,7 @@ function resetAuthRateLimit(clientId: string): void {
 // Message queue system to prevent responses from being overwritten
 const messageQueue: Array<{ content: string; timestamp: number; isFromAgent?: boolean; agentId?: string }> = [];
 let isProcessingMessage = false;
+let currentAbortController: AbortController | null = null;
 
 /**
  * Get only user messages from the queue (excludes agent messages)
@@ -91,6 +92,9 @@ function broadcastQueueUpdate() {
 async function streamAndBroadcast(config: Config, aiMessage: string) {
   let messageId = crypto.randomUUID();
 
+  currentAbortController = new AbortController();
+  const { signal } = currentAbortController;
+
   broadcast({ type: "stream_start", messageId });
 
   const context = loadContext();
@@ -98,36 +102,45 @@ async function streamAndBroadcast(config: Config, aiMessage: string) {
   let currentMessageContent = "";
   let currentMessageIndex = context.messages.length;
 
-  for await (const event of streamMessage(config, context.messages, aiMessage)) {
-    if (event.type === 'chunk') {
-      currentMessageContent += event.text;
-      fullContent += event.text;
-      broadcast({ type: "stream_chunk", messageId, chunk: event.text });
-    } else if (event.type === 'split') {
-      addMessage("assistant", currentMessageContent);
-      broadcast({ type: "stream_end", messageId, fullContent: currentMessageContent });
+  try {
+    for await (const event of streamMessage(config, context.messages, aiMessage, signal)) {
+      if (event.type === 'chunk') {
+        currentMessageContent += event.text;
+        fullContent += event.text;
+        broadcast({ type: "stream_chunk", messageId, chunk: event.text });
+      } else if (event.type === 'split') {
+        addMessage("assistant", currentMessageContent);
+        broadcast({ type: "stream_end", messageId, fullContent: currentMessageContent });
 
-      messageId = crypto.randomUUID();
-      currentMessageContent = "";
-      fullContent = "";
-      currentMessageIndex++;
+        messageId = crypto.randomUUID();
+        currentMessageContent = "";
+        fullContent = "";
+        currentMessageIndex++;
 
-      broadcast({ type: "stream_start", messageId });
-    } else if (event.type === 'tool_use') {
-      const contentPosition = fullContent.length;
-      addToolCall(event.toolName, event.toolInput, currentMessageIndex, contentPosition);
-      broadcast({
-        type: "tool_use",
-        toolName: event.toolName,
-        toolInput: event.toolInput,
-        messageIndex: currentMessageIndex,
-        contentPosition,
-      });
+        broadcast({ type: "stream_start", messageId });
+      } else if (event.type === 'tool_use') {
+        const contentPosition = fullContent.length;
+        addToolCall(event.toolName, event.toolInput, currentMessageIndex, contentPosition);
+        broadcast({
+          type: "tool_use",
+          toolName: event.toolName,
+          toolInput: event.toolInput,
+          messageIndex: currentMessageIndex,
+          contentPosition,
+        });
+      }
+    }
+  } catch (err) {
+    if (signal.aborted) {
+      console.log("Generation stopped by user");
+    } else {
+      throw err;
     }
   }
 
   addMessage("assistant", currentMessageContent);
   broadcast({ type: "stream_end", messageId, fullContent: currentMessageContent });
+  currentAbortController = null;
 }
 
 /**
@@ -528,6 +541,14 @@ async function handleClientMessage(
     case "unsubscribe_agent": {
       if (ws.data.subscribedAgentId === message.agentId) {
         ws.data.subscribedAgentId = null;
+      }
+      break;
+    }
+
+    case "stop_generation": {
+      if (currentAbortController) {
+        console.log("Generation stop requested by client");
+        currentAbortController.abort();
       }
       break;
     }

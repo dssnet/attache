@@ -95,6 +95,7 @@ export async function* streamMessage(
   config: Config,
   messages: Message[],
   userMessage: string,
+  abortSignal?: AbortSignal,
 ): AsyncGenerator<StreamEvent, void, unknown> {
   const providerName = config.models.default;
   const provider = config.models.providers[providerName];
@@ -125,12 +126,15 @@ export async function* streamMessage(
   const MAX_ITERATIONS = 20;
 
   for (let iteration = 0; iteration < MAX_ITERATIONS; iteration++) {
+    if (abortSignal?.aborted) break;
+
     const result = streamText({
       model,
       system: systemPrompt,
       messages: coreMessages,
       tools: toolDefs,
       temperature: provider.temperature,
+      abortSignal,
     });
 
     let currentText = "";

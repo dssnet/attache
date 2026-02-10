@@ -20,7 +20,8 @@ type ClientMessage =
   | { type: "remove_queued"; timestamp: number }
   | { type: "compact_context" }
   | { type: "subscribe_agent"; agentId: string }
-  | { type: "unsubscribe_agent"; agentId: string };
+  | { type: "unsubscribe_agent"; agentId: string }
+  | { type: "stop_generation" };
 
 export interface AgentDisplayMessage {
   type: "thinking" | "tool_call" | "send_to_main" | "user_message" | "system";
@@ -417,6 +418,10 @@ export function useWebSocket() {
     send({ type: "unsubscribe_agent", agentId });
   }
 
+  function stopGeneration() {
+    send({ type: "stop_generation" });
+  }
+
   function restartServer() {
     send({ type: "restart_server" });
   }
@@ -466,6 +471,7 @@ export function useWebSocket() {
     compactContext,
     subscribeAgent,
     unsubscribeAgent,
+    stopGeneration,
     restartServer,
     disconnect,
   };
