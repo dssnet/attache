@@ -173,10 +173,6 @@ const authToken = generateAuthToken();
 console.log(`  Generated auth token: ${authToken}`);
 console.log("  Save this token — you need it to log in.");
 
-// Step 4: Assistant name
-console.log("\n  ── Step 4: Assistant ────────────────────");
-const assistantName = promptOptional("Assistant name", "Attache");
-
 // Build config
 const config: Config = {
   models: {
@@ -186,7 +182,7 @@ const config: Config = {
     },
   },
   assistant: {
-    name: assistantName,
+    name: "Attaché",
     first_run: true,
   },
   server: {
@@ -213,8 +209,8 @@ writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2), "utf-8");
 
 console.log(`\n  Config written to ${CONFIG_PATH}`);
 
-// Step 5: qmd (local AI search for memory)
-console.log("\n  ── Step 5: Memory Search (qmd) ─────────");
+// Step 4: qmd (local AI search for memory)
+console.log("\n  ── Step 4: Memory Search (qmd) ─────────");
 if (Bun.spawnSync(["which", "qmd"], { stdout: "pipe", stderr: "pipe" }).exitCode === 0) {
   console.log("  ✓ qmd is already installed");
 } else {
@@ -235,9 +231,9 @@ if (Bun.spawnSync(["which", "qmd"], { stdout: "pipe", stderr: "pipe" }).exitCode
   }
 }
 
-// Step 6: Systemd service (Linux only)
+// Step 5: Systemd service (Linux only)
 if (process.platform === "linux") {
-  console.log("\n  ── Step 6: Systemd Service ──────────────");
+  console.log("\n  ── Step 5: Systemd Service ──────────────");
   const wantService = promptYesNo("Install as a systemd user service?", false);
   if (wantService) {
     installSystemdService();
