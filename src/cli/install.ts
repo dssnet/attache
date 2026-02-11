@@ -213,9 +213,31 @@ writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2), "utf-8");
 
 console.log(`\n  Config written to ${CONFIG_PATH}`);
 
-// Step 5: Systemd service (Linux only)
+// Step 5: qmd (local AI search for memory)
+console.log("\n  ── Step 5: Memory Search (qmd) ─────────");
+if (Bun.spawnSync(["which", "qmd"], { stdout: "pipe", stderr: "pipe" }).exitCode === 0) {
+  console.log("  ✓ qmd is already installed");
+} else {
+  const wantQmd = promptYesNo("Install qmd for AI-powered memory search?", true);
+  if (wantQmd) {
+    console.log("  Installing qmd...");
+    const result = Bun.spawnSync(["bun", "install", "-g", "github:tobi/qmd"], {
+      stdout: "inherit",
+      stderr: "inherit",
+    });
+    if (result.exitCode === 0) {
+      console.log("  ✓ qmd installed");
+    } else {
+      console.log("  ⚠ qmd installation failed. Memory will use basic search.");
+    }
+  } else {
+    console.log("  Skipped. Memory will use basic keyword search.");
+  }
+}
+
+// Step 6: Systemd service (Linux only)
 if (process.platform === "linux") {
-  console.log("\n  ── Step 5: Systemd Service ──────────────");
+  console.log("\n  ── Step 6: Systemd Service ──────────────");
   const wantService = promptYesNo("Install as a systemd user service?", false);
   if (wantService) {
     installSystemdService();

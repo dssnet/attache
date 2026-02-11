@@ -4,6 +4,7 @@ import type { Message } from "./context.ts";
 import { loadUserProfile } from "./user-profile.ts";
 import { createModel } from "./adapters.ts";
 import { createMainTools, getToolDefinitions, executeRegistryTool } from "./tools.ts";
+import { searchMemoriesForContext } from "./memory.ts";
 
 /**
  * Generates the system prompt for the AI
@@ -23,9 +24,11 @@ Your tools:
 - start_agent — spawn a sub-agent for a task (agents have filesystem, terminal, web access)
 - send_to_agent — message an existing agent
 - create_download — create a downloadable file from content you generate
+- save_memory — save an important fact or preference to persistent memory
 
 ## Rules
 1. For ANY request beyond casual chat, use tool calls. You have NO direct system access — tools are your only way to act.
+9. Relevant memories from past conversations are automatically provided in your context. Save important new facts (user preferences, decisions, personal details) using save_memory.
 2. Call get_active_agents before starting a new agent to check for duplicates. Reuse existing agents via send_to_agent when the task is clearly the same — but if the user explicitly asks for a new agent or a new task, start a fresh one.
 3. Start agents immediately — don't ask the user for permission. Never start more than one agent for the same request.
 4. Never poll agents after starting them. They call back automatically when done.
@@ -106,7 +109,7 @@ export async function* streamMessage(
   }
 
   const model = createModel(provider);
-  const systemPrompt = getSystemPrompt(config);
+  let systemPrompt = getSystemPrompt(config);
   const toolRegistry = createMainTools(config);
   const toolDefs = getToolDefinitions(toolRegistry);
 
@@ -121,6 +124,18 @@ export async function* streamMessage(
     })),
     { role: "user" as const, content: userMessage },
   ];
+
+  // Auto-inject relevant memories into system prompt (skip for agent relay messages)
+  if (!userMessage.startsWith("[An agent sent")) {
+    try {
+      const memoryContext = await searchMemoriesForContext(userMessage);
+      if (memoryContext) {
+        systemPrompt += `\n\n## Relevant Memories\nThe following are relevant facts from past conversations:\n\n${memoryContext}`;
+      }
+    } catch (e) {
+      console.error("Memory search failed:", e);
+    }
+  }
 
   // Manual tool execution loop
   let hasAgentToolInCycle = false;

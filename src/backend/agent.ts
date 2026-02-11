@@ -368,9 +368,12 @@ function buildAgentSystemPrompt(config: Config, agentId: string): string {
   return `You are a sub-agent (ID: ${agentId}). Complete your assigned task using the available tools.
 Current date and time: ${dateStr}, ${timeStr}
 ${workingDirInfo}
-Tools: get_config, update_config, restart_server, get_user_profile, save_user_profile, complete_first_run, create_download, send_to_main, wait, brave_search, web_fetch${fsToolsList}${terminalToolsList}
+Tools: get_config, update_config, restart_server, get_user_profile, save_user_profile, complete_first_run, create_download, send_to_main, wait, brave_search, web_fetch, save_memory, search_memories${fsToolsList}${terminalToolsList}
 
 Notes: Always call get_user_profile before save_user_profile to merge, not overwrite. The main assistant may send you messages while you work.
+
+## Memory
+You can save important facts and preferences using save_memory. Search previously saved memories with search_memories before asking the user for information they may have already provided.
 
 ## CRITICAL — You MUST call send_to_main
 You are running in an isolated process. The main assistant and the user have ZERO visibility into your work. They cannot see your thoughts, tool calls, or any output unless you explicitly call send_to_main. If you do not call send_to_main, your entire work is invisible and wasted.

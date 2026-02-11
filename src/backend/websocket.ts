@@ -249,7 +249,7 @@ setAgentEventCallback({
   onAgentRemoved: (agentId) => {
     broadcast({ type: "agent_removed", agentId });
   },
-  onSendToMain: (message, agentId) => {
+  onSendToMain: (message: string, agentId: string) => {
     // Validate message is not empty
     const trimmedMessage = message?.trim();
     if (!trimmedMessage) {

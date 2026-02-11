@@ -16,6 +16,7 @@ import { homedir } from "node:os";
 import { triggerRestart } from "./utils.ts";
 import { expandHome } from "./utils.ts";
 import type { AgentDisplayMessage } from "./types.ts";
+import { saveMemory, searchMemories } from "./memory.ts";
 
 const DOWNLOADS_DIR = join(homedir(), ".attache", "downloads");
 
@@ -292,6 +293,26 @@ export function createMainTools(config: Config): ToolRegistry {
         } catch (error: any) {
           return JSON.stringify({ success: false, error: error.message });
         }
+      },
+    },
+
+    save_memory: {
+      definition: tool({
+        description:
+          "Saves an important fact, preference, or piece of information to persistent memory. Use this to remember things across conversations — user preferences, decisions, project details, or anything worth recalling later.",
+        inputSchema: jsonSchema({
+          type: "object",
+          properties: {
+            title: { type: "string", description: "A short, descriptive title (e.g. 'User prefers dark mode')" },
+            content: { type: "string", description: "The detailed content of the memory. Include all relevant context." },
+            tags: { type: "array", items: { type: "string" }, description: "Optional tags for categorization" },
+          },
+          required: ["title", "content"],
+        }),
+      }),
+      handler: async (input: any) => {
+        const result = await saveMemory({ title: input.title, content: input.content, tags: input.tags, source: "assistant" });
+        return JSON.stringify(result);
       },
     },
   };
@@ -588,6 +609,45 @@ export function createAgentTools(config: Config, ctx: AgentToolContext): ToolReg
         } catch (error: any) {
           return JSON.stringify({ success: false, error: error.message });
         }
+      },
+    },
+
+    save_memory: {
+      definition: tool({
+        description:
+          "Saves an important fact, preference, or piece of information to persistent memory. Use this proactively when the user shares preferences, personal details, important decisions, or any information useful to remember in future conversations.",
+        inputSchema: jsonSchema({
+          type: "object",
+          properties: {
+            title: { type: "string", description: "A short, descriptive title (e.g. 'User prefers dark mode')" },
+            content: { type: "string", description: "The detailed content of the memory. Include all relevant context." },
+            tags: { type: "array", items: { type: "string" }, description: "Optional tags for categorization" },
+          },
+          required: ["title", "content"],
+        }),
+      }),
+      handler: async (input: any) => {
+        const result = await saveMemory({ title: input.title, content: input.content, tags: input.tags, source: "agent" });
+        return JSON.stringify(result);
+      },
+    },
+
+    search_memories: {
+      definition: tool({
+        description:
+          "Searches saved memories and facts. Use this to recall previously saved information about the user, their preferences, past decisions, or any stored knowledge. Always search memories before asking the user to repeat information they may have already shared.",
+        inputSchema: jsonSchema({
+          type: "object",
+          properties: {
+            query: { type: "string", description: "The search query" },
+            limit: { type: "number", description: "Maximum number of results (default 5)" },
+          },
+          required: ["query"],
+        }),
+      }),
+      handler: async (input: any) => {
+        const results = await searchMemories(input.query, input.limit || 5);
+        return JSON.stringify({ success: true, results });
       },
     },
   };
