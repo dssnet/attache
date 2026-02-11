@@ -236,12 +236,26 @@ export async function resumeRunningAgents(config: Config): Promise<void> {
     (async () => {
       try {
         await runAgentLoop(provider, config, resumedMessages, agent.systemPrompt!, messagesToMain, agent);
+
+        // Nudge agent if it forgot to call send_to_main
+        if (messagesToMain.length === 0) {
+          pushDisplayMessage(agent, { type: "system", content: "Nudging agent to report results...", timestamp: Date.now() });
+          const nudgeMessages = [
+            ...(agent.conversationHistory || []),
+            { role: "user", content: "[System]: You completed your task without calling send_to_main. The user has NO visibility into your work. Call send_to_main now with a summary of what you did." },
+          ];
+          try {
+            await runAgentLoop(provider, config, nudgeMessages, agent.systemPrompt!, messagesToMain, agent);
+          } catch (err) {
+            console.error(`Agent ${agent.id} nudge failed:`, err);
+          }
+        }
       } finally {
         agent.status = "completed";
         agent.lastActivityTime = Date.now();
 
         if (messagesToMain.length === 0) {
-          const autoMessage = `[Agent resumed task "${agent.task}" but did not send back a report.]`;
+          const autoMessage = `[Agent resumed task "${agent.task}" but did not report back results.]`;
           messagesToMain.push(autoMessage);
           pushDisplayMessage(agent, { type: "system", content: autoMessage, timestamp: Date.now() });
           try {
@@ -574,12 +588,26 @@ export async function runAgent(
 
   try {
     output = await runAgentLoop(provider, config, initialMessages, systemPrompt, messagesToMain, agent);
+
+    // Nudge agent if it forgot to call send_to_main
+    if (messagesToMain.length === 0) {
+      pushDisplayMessage(agent, { type: "system", content: "Nudging agent to report results...", timestamp: Date.now() });
+      const nudgeMessages = [
+        ...(agent.conversationHistory || []),
+        { role: "user", content: "[System]: You completed your task without calling send_to_main. The user has NO visibility into your work. Call send_to_main now with a summary of what you did." },
+      ];
+      try {
+        await runAgentLoop(provider, config, nudgeMessages, systemPrompt, messagesToMain, agent);
+      } catch (err) {
+        console.error(`Agent ${agentId} nudge failed:`, err);
+      }
+    }
   } finally {
     agent.status = "completed";
     agent.lastActivityTime = Date.now();
 
     if (messagesToMain.length === 0) {
-      const autoMessage = `[Agent completed task "${trimmedTask}" but did not send back a report. You can use send_to_agent to ask it for results.]`;
+      const autoMessage = `[Agent completed task "${trimmedTask}" but did not report back results.]`;
       messagesToMain.push(autoMessage);
       pushDisplayMessage(agent, { type: "system", content: autoMessage, timestamp: Date.now() });
       try {
@@ -649,12 +677,26 @@ export async function resumeAgent(
 
   try {
     output = await runAgentLoop(provider, config, resumedMessages, agent.systemPrompt, messagesToMain, agent);
+
+    // Nudge agent if it forgot to call send_to_main
+    if (messagesToMain.length === 0) {
+      pushDisplayMessage(agent, { type: "system", content: "Nudging agent to report results...", timestamp: Date.now() });
+      const nudgeMessages = [
+        ...(agent.conversationHistory || []),
+        { role: "user", content: "[System]: You completed your task without calling send_to_main. The user has NO visibility into your work. Call send_to_main now with a summary of what you did." },
+      ];
+      try {
+        await runAgentLoop(provider, config, nudgeMessages, agent.systemPrompt, messagesToMain, agent);
+      } catch (err) {
+        console.error(`Agent ${agentId} nudge failed:`, err);
+      }
+    }
   } finally {
     agent.status = "completed";
     agent.lastActivityTime = Date.now();
 
     if (messagesToMain.length === 0) {
-      const autoMessage = `[Agent completed follow-up on "${agent.task}" but did not send back a report. You can use send_to_agent to ask it for results.]`;
+      const autoMessage = `[Agent completed follow-up on "${agent.task}" but did not report back results.]`;
       messagesToMain.push(autoMessage);
       pushDisplayMessage(agent, { type: "system", content: autoMessage, timestamp: Date.now() });
       try {
