@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Wrench, Brain } from "lucide-vue-next";
+import { Wrench } from "lucide-vue-next";
 import Label from "./Label.vue";
 
 defineProps<{
@@ -33,10 +33,6 @@ function getToolDescription(
       return "Sending message to agent";
     case "get_active_agents":
       return "Checking active agents";
-    case "save_memory":
-      return toolInput.title
-        ? `Saving memory: ${toolInput.title}`
-        : "Saving memory";
     default:
       return formatToolName(toolName);
   }
@@ -48,7 +44,6 @@ function getToolDescription(
     :label="getToolDescription(toolCall.toolName, toolCall.toolInput)"
     @click="emit('click')"
   >
-    <Brain v-if="toolCall.toolName === 'save_memory'" class="size-4 shrink-0" />
-    <Wrench v-else class="size-4 shrink-0" />
+    <Wrench class="size-4 shrink-0" />
   </Label>
 </template>

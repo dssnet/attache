@@ -21,8 +21,7 @@ type ClientMessage =
   | { type: "compact_context" }
   | { type: "subscribe_agent"; agentId: string }
   | { type: "unsubscribe_agent"; agentId: string }
-  | { type: "stop_generation" }
-  | { type: "restart_server" };
+  | { type: "stop_generation" };
 
 export interface AgentDisplayMessage {
   type: "thinking" | "tool_call" | "send_to_main" | "user_message" | "system";
@@ -107,6 +106,7 @@ export function useWebSocket() {
   const mcpStatus = ref<
     Array<{ name: string; status: string; toolCount: number; error?: string }>
   >([]);
+
   let reconnectTimeout: number | null = null;
   let reconnectAttempts = 0;
 

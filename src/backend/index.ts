@@ -4,7 +4,6 @@ import { handleWebSocket } from "./websocket.ts";
 import { mcpManager } from "./mcp.ts";
 import { resumeRunningAgents } from "./agent.ts";
 import { startCronJobs } from "./cron.ts";
-import { initializeMemoryCollection } from "./memory.ts";
 
 // Main entry point for Attaché
 export async function startServer() {
@@ -59,11 +58,6 @@ export async function startServer() {
   console.log(`\n✨ ${config.assistant.name} is ready!`);
   console.log(`Server running at http://${server.hostname}:${server.port}`);
   console.log(`WebSocket available at ws://${server.hostname}:${server.port}/ws`);
-
-  // Initialize memory system (qmd)
-  initializeMemoryCollection().catch(err => {
-    console.warn("Memory system initialization skipped:", err.message);
-  });
 
   // Start scheduled jobs
   startCronJobs();
