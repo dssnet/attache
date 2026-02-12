@@ -357,6 +357,10 @@ function buildAgentSystemPrompt(config: Config, agentId: string): string {
     ? `\n- run_command: Execute a shell command and get stdout/stderr/exit code`
     : "";
 
+  const memoryToolsList = config.memory
+    ? `\n- save_memory: Save information to long-term memory\n- search_memories: Search long-term memory for relevant information`
+    : "";
+
   const workingDirInfo = config.tools?.workingDir
     ? `\nYour working directory is: ${resolve(expandHome(config.tools.workingDir))}\nUse this as the default location for downloads, file operations, and as the cwd for commands unless told otherwise. You are not restricted to this directory.\n`
     : "";
@@ -368,7 +372,7 @@ function buildAgentSystemPrompt(config: Config, agentId: string): string {
   return `You are a sub-agent (ID: ${agentId}). Complete your assigned task using the available tools.
 Current date and time: ${dateStr}, ${timeStr}
 ${workingDirInfo}
-Tools: get_config, update_config, restart_server, get_user_profile, save_user_profile, complete_first_run, create_download, send_to_main, wait, brave_search, web_fetch${fsToolsList}${terminalToolsList}
+Tools: get_config, update_config, restart_server, get_user_profile, save_user_profile, complete_first_run, create_download, send_to_main, wait, brave_search, web_fetch${fsToolsList}${terminalToolsList}${memoryToolsList}
 
 Notes: Always call get_user_profile before save_user_profile to merge, not overwrite. The main assistant may send you messages while you work.
 

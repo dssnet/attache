@@ -4,6 +4,7 @@ import type { Message } from "./context.ts";
 import { loadUserProfile } from "./user-profile.ts";
 import { createModel } from "./adapters.ts";
 import { createMainTools, getToolDefinitions, executeRegistryTool } from "./tools.ts";
+import { searchMemories } from "./memory.ts";
 
 /**
  * Generates the system prompt for the AI
@@ -15,6 +16,10 @@ function getSystemPrompt(config: Config): string {
   const dateStr = now.toLocaleDateString("de-DE", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
   const timeStr = now.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
 
+  const memoryToolLine = config.memory
+    ? "\n- save_memory — save important information to long-term memory"
+    : "";
+
   let prompt = `You are ${config.assistant.name}, a personal AI assistant.
 Current date and time: ${dateStr}, ${timeStr}
 
@@ -22,7 +27,7 @@ Your tools:
 - get_active_agents — list running/completed agents
 - start_agent — spawn a sub-agent for a task (agents have filesystem, terminal, web access)
 - send_to_agent — message an existing agent
-- create_download — create a downloadable file from content you generate
+- create_download — create a downloadable file from content you generate${memoryToolLine}
 
 ## Rules
 1. For ANY request beyond casual chat, use tool calls. You have NO direct system access — tools are your only way to act.
@@ -32,7 +37,7 @@ Your tools:
 5. The user CANNOT see agent messages. Always relay agent results to the user in your own words.
 6. When you see "[An agent sent the above information...]", relay the most recent agent message to the user naturally.
 7. Use create_download directly when you can generate the file content yourself (e.g. writing a CSV, code, or text). For files that need to be read from disk, start an agent — agents also have create_download and can read files then create downloads.
-8. Include download URLs as markdown links: [Download filename](url). Only use URLs that were returned by create_download or an agent — NEVER fabricate or guess URLs.
+8. Include download URLs as markdown links: [Download filename](url). Only use URLs that were returned by create_download or an agent — NEVER fabricate or guess URLs.${config.memory ? "\n9. When the user shares important personal information, preferences, facts, or anything worth remembering, use save_memory to store it. Be proactive — don't ask if you should remember something, just save it." : ""}
 
 ## CRITICAL — No Hallucination
 After calling start_agent or send_to_agent, your response MUST end immediately. Acknowledge briefly (vary your wording naturally) and STOP. You have ZERO knowledge of what agents will find or do. Do NOT:
@@ -106,9 +111,24 @@ export async function* streamMessage(
   }
 
   const model = createModel(provider);
-  const systemPrompt = getSystemPrompt(config);
+  let systemPrompt = getSystemPrompt(config);
   const toolRegistry = createMainTools(config);
   const toolDefs = getToolDefinitions(toolRegistry);
+
+  // Automatic memory retrieval: search memories with the user's message and inject into system prompt
+  if (config.memory) {
+    try {
+      const memoryResults = await searchMemories(userMessage, config);
+      if (memoryResults.length > 0) {
+        const memoriesSection = memoryResults
+          .map(m => `- **${m.title}**: ${m.content}`)
+          .join("\n");
+        systemPrompt += `\n\n## Relevant Memories\nThe following memories may be relevant to the current conversation:\n${memoriesSection}`;
+      }
+    } catch (err) {
+      console.error("Memory retrieval failed:", err);
+    }
+  }
 
   // Convert Attaché messages to Vercel AI SDK ModelMessage format
   const coreMessages: ModelMessage[] = [

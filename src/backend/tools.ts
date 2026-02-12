@@ -15,6 +15,7 @@ import { join, resolve, normalize } from "node:path";
 import { homedir } from "node:os";
 import { triggerRestart } from "./utils.ts";
 import { expandHome } from "./utils.ts";
+import { saveMemoryFile, searchMemories } from "./memory.ts";
 import type { AgentDisplayMessage } from "./types.ts";
 
 const DOWNLOADS_DIR = join(homedir(), ".attache", "downloads");
@@ -161,7 +162,7 @@ export async function executeRegistryTool(
  * Creates the main AI tools with config bound.
  */
 export function createMainTools(config: Config): ToolRegistry {
-  return {
+  const registry: ToolRegistry = {
     get_active_agents: {
       definition: tool({
         description:
@@ -295,6 +296,50 @@ export function createMainTools(config: Config): ToolRegistry {
       },
     },
   };
+
+  // Add memory tools if configured
+  if (config.memory) {
+    registry.save_memory = {
+      definition: tool({
+        description:
+          "Saves a piece of information to long-term memory. Use this when the user shares important personal information, preferences, facts, or anything worth remembering for future conversations.",
+        inputSchema: jsonSchema({
+          type: "object",
+          properties: {
+            title: {
+              type: "string",
+              description: "A short, descriptive title for the memory",
+            },
+            content: {
+              type: "string",
+              description: "The content/details of the memory",
+            },
+            tags: {
+              type: "array",
+              items: { type: "string" },
+              description: "Optional tags to categorize the memory",
+            },
+          },
+          required: ["title", "content"],
+        }),
+      }),
+      handler: async (input: any) => {
+        try {
+          const result = await saveMemoryFile(
+            input.title,
+            input.content,
+            input.tags || [],
+            config,
+          );
+          return JSON.stringify({ success: true, filepath: result.filepath, message: "Memory saved successfully" });
+        } catch (error: any) {
+          return JSON.stringify({ success: false, error: error.message });
+        }
+      },
+    };
+  }
+
+  return registry;
 }
 
 // ============================================
@@ -591,6 +636,75 @@ export function createAgentTools(config: Config, ctx: AgentToolContext): ToolReg
       },
     },
   };
+
+  // Add memory tools if configured
+  if (config.memory) {
+    Object.assign(registry, {
+      save_memory: {
+        definition: tool({
+          description:
+            "Saves a piece of information to long-term memory. Use this to store important user preferences, facts, decisions, or anything worth remembering for future conversations.",
+          inputSchema: jsonSchema({
+            type: "object",
+            properties: {
+              title: {
+                type: "string",
+                description: "A short, descriptive title for the memory",
+              },
+              content: {
+                type: "string",
+                description: "The content/details of the memory",
+              },
+              tags: {
+                type: "array",
+                items: { type: "string" },
+                description: "Optional tags to categorize the memory",
+              },
+            },
+            required: ["title", "content"],
+          }),
+        }),
+        handler: async (input: any) => {
+          try {
+            const result = await saveMemoryFile(
+              input.title,
+              input.content,
+              input.tags || [],
+              config,
+            );
+            return JSON.stringify({ success: true, filepath: result.filepath, message: "Memory saved successfully" });
+          } catch (error: any) {
+            return JSON.stringify({ success: false, error: error.message });
+          }
+        },
+      },
+
+      search_memories: {
+        definition: tool({
+          description:
+            "Searches long-term memory for relevant information. Use this to recall previously saved facts, preferences, or context about the user.",
+          inputSchema: jsonSchema({
+            type: "object",
+            properties: {
+              query: {
+                type: "string",
+                description: "The search query to find relevant memories",
+              },
+            },
+            required: ["query"],
+          }),
+        }),
+        handler: async (input: any) => {
+          try {
+            const results = await searchMemories(input.query, config);
+            return JSON.stringify({ success: true, results });
+          } catch (error: any) {
+            return JSON.stringify({ success: false, error: error.message });
+          }
+        },
+      },
+    });
+  }
 
   // Add MCP tools
   const mcpTools = mcpManager.getTools();

@@ -4,6 +4,7 @@ import { handleWebSocket } from "./websocket.ts";
 import { mcpManager } from "./mcp.ts";
 import { resumeRunningAgents } from "./agent.ts";
 import { startCronJobs } from "./cron.ts";
+import { initMemoryDb, syncMemoryIndex } from "./memory.ts";
 
 // Main entry point for Attaché
 export async function startServer() {
@@ -13,6 +14,13 @@ export async function startServer() {
   if (config.mcpServers && Object.keys(config.mcpServers).length > 0) {
     console.log(`Connecting to ${Object.keys(config.mcpServers).length} MCP server(s)...`);
     await mcpManager.initialize(config.mcpServers);
+  }
+
+  // Initialize memory system if configured
+  if (config.memory) {
+    initMemoryDb(config);
+    const synced = await syncMemoryIndex(config);
+    console.log(`Memory index synced (${synced} new file${synced !== 1 ? "s" : ""} indexed, type: ${config.memory.type})`);
   }
 
   console.log(`Starting ${config.assistant.name}...`);

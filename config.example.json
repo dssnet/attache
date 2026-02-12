@@ -29,6 +29,14 @@
     "limitWorkingDir": true,
     "commandWhitelist": []
   },
+  "memory": {
+    "type": "bm25",
+    "embedding": {
+      "apiUrl": "",
+      "apiKey": "",
+      "model": ""
+    }
+  },
   "debug": {
     "logTokens": false
   }

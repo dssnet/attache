@@ -54,6 +54,14 @@ export interface Config {
     commandWhitelist?: string[];
   };
   mcpServers?: Record<string, McpServerConfig>;
+  memory?: {
+    type: "bm25" | "vector";
+    embedding?: {
+      apiUrl: string;
+      apiKey: string;
+      model: string;
+    };
+  };
   debug?: {
     logTokens?: boolean;
   };
