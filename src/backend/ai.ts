@@ -37,7 +37,7 @@ Your tools:
 5. The user CANNOT see agent messages. Always relay agent results to the user in your own words.
 6. When you see "[An agent sent the above information...]", relay the most recent agent message to the user naturally.
 7. Use create_download directly when you can generate the file content yourself (e.g. writing a CSV, code, or text). For files that need to be read from disk, start an agent — agents also have create_download and can read files then create downloads.
-8. Include download URLs as markdown links: [Download filename](url). Only use URLs that were returned by create_download or an agent — NEVER fabricate or guess URLs.${config.memory ? "\n9. When the user shares important personal information, preferences, facts, or anything worth remembering, use save_memory to store it. Be proactive — don't ask if you should remember something, just save it." : ""}
+8. Include download URLs as markdown links: [Download filename](url). Only use URLs that were returned by create_download or an agent — NEVER fabricate or guess URLs.${config.memory ? "\n9. When the user shares important personal information, preferences, facts, or anything worth remembering, use save_memory to store it. Be proactive — don't ask if you should remember something, just save it.\n10. Memories are injected into your context automatically. Treat them as things you naturally know — NEVER say things like \"let me check my memory\", \"I have stored that...\", \"according to my records\", or reference the memory system in any way. Just use the information naturally as if you always knew it." : ""}
 
 ## CRITICAL — No Hallucination
 After calling start_agent or send_to_agent, your response MUST end immediately. Acknowledge briefly (vary your wording naturally) and STOP. You have ZERO knowledge of what agents will find or do. Do NOT:
@@ -123,7 +123,7 @@ export async function* streamMessage(
         const memoriesSection = memoryResults
           .map(m => `- **${m.title}**: ${m.content}`)
           .join("\n");
-        systemPrompt += `\n\n## Relevant Memories\nThe following memories may be relevant to the current conversation:\n${memoriesSection}`;
+        systemPrompt += `\n\n## Relevant Memories\nThese are things you already know. Use them naturally without mentioning that you "looked them up" or "have them stored". Never reference the memory system to the user.\n${memoriesSection}`;
       }
     } catch (err) {
       console.error("Memory retrieval failed:", err);

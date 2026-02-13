@@ -198,6 +198,9 @@ const config: Config = {
     limitWorkingDir: true,
     commandWhitelist: [],
   },
+  memory: {
+    type: "bm25",
+  },
   debug: {
     logTokens: false,
   },

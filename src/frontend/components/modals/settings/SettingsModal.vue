@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
-import { Cpu, Wrench, Palette, User, Plug } from "lucide-vue-next";
+import { Cpu, Wrench, Palette, User, Plug, Brain } from "lucide-vue-next";
 import Modal from "../Modal.vue";
 import ModalSidebar from "../components/ModalSidebar.vue";
 import AppearanceSection from "./pages/Appearance.vue";
@@ -8,6 +8,7 @@ import AccountSection from "./pages/Account.vue";
 import ModelSection from "./pages/Model.vue";
 import ToolsSection from "./pages/Tools.vue";
 import McpServersSection from "./pages/MCP-Severs.vue";
+import MemorySection from "./pages/Memory.vue";
 import { useConfig } from "../../../composables/useConfig";
 
 const { getConfig, getMcpStatus } = useConfig();
@@ -23,7 +24,7 @@ const emit = defineEmits<{
   logout: [];
 }>();
 
-type Section = "model" | "tools" | "mcp" | "appearance" | "account";
+type Section = "model" | "tools" | "memory" | "mcp" | "appearance" | "account";
 
 const activeSection = ref<Section>("appearance");
 
@@ -31,6 +32,7 @@ const sections: { id: Section; label: string; icon: any }[] = [
   { id: "appearance", label: "Appearance", icon: Palette },
   { id: "model", label: "Model", icon: Cpu },
   { id: "tools", label: "Tools", icon: Wrench },
+  { id: "memory", label: "Memory", icon: Brain },
   { id: "mcp", label: "MCP Servers", icon: Plug },
   { id: "account", label: "Account", icon: User },
 ];
@@ -61,6 +63,8 @@ watch(
         <ModelSection v-show="activeSection === 'model'" />
 
         <ToolsSection v-show="activeSection === 'tools'" />
+
+        <MemorySection v-show="activeSection === 'memory'" />
 
         <McpServersSection v-show="activeSection === 'mcp'" />
 

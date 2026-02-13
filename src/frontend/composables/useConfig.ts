@@ -50,6 +50,14 @@ export interface Config {
       };
     }
   >;
+  memory?: {
+    type: "bm25" | "vector";
+    embedding?: {
+      apiUrl: string;
+      apiKey: string;
+      model: string;
+    };
+  };
 }
 
 export interface McpStatusItem {
