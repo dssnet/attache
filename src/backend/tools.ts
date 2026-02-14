@@ -7,6 +7,7 @@ import {
   runAgent,
   resumeAgent,
   sendToAgent,
+  killAgent,
   getAllAgentsInfo,
   getAgentInfo,
 } from "./agent.ts";
@@ -290,6 +291,34 @@ export function createMainTools(config: Config): ToolRegistry {
           } else {
             return JSON.stringify({ success: false, error: "Failed to send message to agent." });
           }
+        } catch (error: any) {
+          return JSON.stringify({ success: false, error: error.message });
+        }
+      },
+    },
+
+    kill_agent: {
+      definition: tool({
+        description:
+          "Kills a running sub-agent immediately. Use this when the user wants to stop an agent, or when an agent is stuck or no longer needed.",
+        inputSchema: jsonSchema({
+          type: "object",
+          properties: {
+            agent_id: {
+              type: "string",
+              description: "The ID of the agent to kill",
+            },
+          },
+          required: ["agent_id"],
+        }),
+      }),
+      handler: async (input: any) => {
+        try {
+          const killed = await killAgent(input.agent_id);
+          if (killed) {
+            return JSON.stringify({ success: true, message: "Agent killed successfully" });
+          }
+          return JSON.stringify({ success: false, error: "Agent not found or not running" });
         } catch (error: any) {
           return JSON.stringify({ success: false, error: error.message });
         }

@@ -41,6 +41,7 @@ interface ActiveAgent {
   conversationHistory?: any[];
   systemPrompt?: string;
   providerType?: string;
+  abortController?: AbortController;
 }
 
 function pushDisplayMessage(agent: ActiveAgent, msg: AgentDisplayMessage) {
@@ -221,6 +222,7 @@ export async function resumeRunningAgents(config: Config): Promise<void> {
 
     agent.lastActivityTime = Date.now();
     agent.incomingMessages = [];
+    agent.abortController = new AbortController();
     pushDisplayMessage(agent, { type: "system", content: "Resumed after server restart", timestamp: Date.now() });
     if (agentEventCallback.onAgentResumed) {
       agentEventCallback.onAgentResumed(agent.id);
@@ -238,7 +240,7 @@ export async function resumeRunningAgents(config: Config): Promise<void> {
         await runAgentLoop(provider, config, resumedMessages, agent.systemPrompt!, messagesToMain, agent);
 
         // Nudge agent if it forgot to call send_to_main
-        if (messagesToMain.length === 0) {
+        if (messagesToMain.length === 0 && !agent.abortController?.signal.aborted) {
           pushDisplayMessage(agent, { type: "system", content: "Nudging agent to report results...", timestamp: Date.now() });
           const nudgeMessages = [
             ...(agent.conversationHistory || []),
@@ -251,6 +253,8 @@ export async function resumeRunningAgents(config: Config): Promise<void> {
           }
         }
       } finally {
+        if (agent.abortController?.signal.aborted) return;
+
         agent.status = "completed";
         agent.lastActivityTime = Date.now();
 
@@ -330,6 +334,26 @@ export function getAgentDetail(agentId: string): { id: string; task: string; sta
   const agent = activeAgents.get(agentId);
   if (!agent) return null;
   return { id: agent.id, task: agent.task, status: agent.status, displayMessages: agent.displayMessages };
+}
+
+export async function killAgent(agentId: string): Promise<boolean> {
+  const agent = activeAgents.get(agentId);
+  if (!agent || agent.status !== "running") {
+    return false;
+  }
+
+  agent.abortController?.abort();
+  agent.status = "completed";
+  agent.lastActivityTime = Date.now();
+  pushDisplayMessage(agent, { type: "system", content: "Agent killed by user", timestamp: Date.now() });
+
+  await saveAgentToDisk(agent);
+
+  if (agentEventCallback.onAgentCompleted) {
+    agentEventCallback.onAgentCompleted(agentId, "");
+  }
+
+  return true;
 }
 
 export async function clearAllAgents(): Promise<void> {
@@ -420,6 +444,9 @@ async function runAgentLoop(
 
   // Outer loop handles incoming messages from main between cycles
   while (true) {
+    // Check if agent was killed
+    if (agent.abortController?.signal.aborted) break;
+
     // Check for incoming messages from main
     if (agent.incomingMessages.length > 0) {
       const incomingMsg = agent.incomingMessages.shift()!;
@@ -431,12 +458,14 @@ async function runAgentLoop(
 
     // Inner tool execution loop (stream + execute tools + repeat)
     for (let iteration = 0; iteration < MAX_ITERATIONS; iteration++) {
+      if (agent.abortController?.signal.aborted) break;
       const result = streamText({
         model,
         system: systemPrompt,
         messages,
         tools: toolDefs,
         temperature: provider.temperature,
+        abortSignal: agent.abortController?.signal,
       });
 
       let currentText = "";
@@ -577,6 +606,7 @@ export async function runAgent(
     status: "running",
     lastActivityTime: Date.now(),
     displayMessages: [],
+    abortController: new AbortController(),
   };
   activeAgents.set(agentId, agent);
 
@@ -594,7 +624,7 @@ export async function runAgent(
     output = await runAgentLoop(provider, config, initialMessages, systemPrompt, messagesToMain, agent);
 
     // Nudge agent if it forgot to call send_to_main
-    if (messagesToMain.length === 0) {
+    if (messagesToMain.length === 0 && !agent.abortController?.signal.aborted) {
       pushDisplayMessage(agent, { type: "system", content: "Nudging agent to report results...", timestamp: Date.now() });
       const nudgeMessages = [
         ...(agent.conversationHistory || []),
@@ -607,6 +637,11 @@ export async function runAgent(
       }
     }
   } finally {
+    // Skip cleanup if agent was already killed (killAgent handles it)
+    if (agent.abortController?.signal.aborted) {
+      return { success: false, output: "", agentId, messagesToMain: undefined };
+    }
+
     agent.status = "completed";
     agent.lastActivityTime = Date.now();
 
@@ -664,6 +699,7 @@ export async function resumeAgent(
   agent.status = "running";
   agent.lastActivityTime = Date.now();
   agent.incomingMessages = [];
+  agent.abortController = new AbortController();
 
   pushDisplayMessage(agent, { type: "user_message", content: message, timestamp: Date.now() });
   if (agentEventCallback.onAgentResumed) {
@@ -683,7 +719,7 @@ export async function resumeAgent(
     output = await runAgentLoop(provider, config, resumedMessages, agent.systemPrompt, messagesToMain, agent);
 
     // Nudge agent if it forgot to call send_to_main
-    if (messagesToMain.length === 0) {
+    if (messagesToMain.length === 0 && !agent.abortController?.signal.aborted) {
       pushDisplayMessage(agent, { type: "system", content: "Nudging agent to report results...", timestamp: Date.now() });
       const nudgeMessages = [
         ...(agent.conversationHistory || []),
@@ -696,6 +732,11 @@ export async function resumeAgent(
       }
     }
   } finally {
+    // Skip cleanup if agent was already killed (killAgent handles it)
+    if (agent.abortController?.signal.aborted) {
+      return { success: false, output: "", agentId, messagesToMain: undefined };
+    }
+
     agent.status = "completed";
     agent.lastActivityTime = Date.now();
 

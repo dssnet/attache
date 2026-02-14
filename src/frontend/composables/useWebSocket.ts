@@ -21,7 +21,8 @@ type ClientMessage =
   | { type: "compact_context" }
   | { type: "subscribe_agent"; agentId: string }
   | { type: "unsubscribe_agent"; agentId: string }
-  | { type: "stop_generation" };
+  | { type: "stop_generation" }
+  | { type: "kill_agent"; agentId: string };
 
 export interface AgentDisplayMessage {
   type: "thinking" | "tool_call" | "send_to_main" | "user_message" | "system";
@@ -418,6 +419,10 @@ export function useWebSocket() {
     send({ type: "unsubscribe_agent", agentId });
   }
 
+  function killAgent(agentId: string) {
+    send({ type: "kill_agent", agentId });
+  }
+
   function stopGeneration() {
     send({ type: "stop_generation" });
   }
@@ -471,6 +476,7 @@ export function useWebSocket() {
     compactContext,
     subscribeAgent,
     unsubscribeAgent,
+    killAgent,
     stopGeneration,
     restartServer,
     disconnect,

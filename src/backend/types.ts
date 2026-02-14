@@ -39,7 +39,8 @@ export type ClientMessage =
   | { type: "subscribe_agent"; agentId: string }
   | { type: "unsubscribe_agent"; agentId: string }
   | { type: "restart_server" }
-  | { type: "stop_generation" };
+  | { type: "stop_generation" }
+  | { type: "kill_agent"; agentId: string };
 
 // Server -> Client messages
 export type ServerMessage =

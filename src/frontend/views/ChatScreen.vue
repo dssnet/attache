@@ -61,6 +61,7 @@ const {
   clearContext: wsClearContext,
   clearAgents: wsClearAgents,
   sendToAgent: wsSendToAgent,
+  killAgent: wsKillAgent,
   getConfig: wsGetConfig,
   updateConfig: wsUpdateConfig,
   getMcpStatus: wsGetMcpStatus,
@@ -141,6 +142,10 @@ function clearAgents() {
 
 function sendAgentMessage(agentId: string, message: string) {
   wsSendToAgent(agentId, message);
+}
+
+function killAgentHandler(agentId: string) {
+  wsKillAgent(agentId);
 }
 
 function copyToClipboard() {
@@ -414,6 +419,7 @@ onUnmounted(() => {
       :agent="selectedAgentData"
       @close="closeAgentDetail"
       @send-message="sendAgentMessage"
+      @kill-agent="killAgentHandler"
     />
 
     <SettingsModal

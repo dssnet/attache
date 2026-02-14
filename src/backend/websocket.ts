@@ -5,7 +5,7 @@ import { loadContext, addMessage, clearContext, addToolCall, saveContext } from 
 import { streamMessage } from "./ai.ts";
 import { loadConfig, saveConfig } from "./config.ts";
 import { shouldAutoCompact, compactMessages } from "./compact.ts";
-import { setAgentEventCallback, clearAllAgents, getAllAgentsInfo, getAgentDetail, sendToAgent } from "./agent.ts";
+import { setAgentEventCallback, clearAllAgents, getAllAgentsInfo, getAgentDetail, sendToAgent, killAgent } from "./agent.ts";
 import { triggerRestart } from "./utils.ts";
 
 interface WebSocketData {
@@ -447,6 +447,25 @@ async function handleClientMessage(
         });
       }
       // If successful, the agent will process the message and send responses via agent_message events
+      break;
+    }
+
+    case "kill_agent": {
+      try {
+        const killed = await killAgent(message.agentId);
+        if (!killed) {
+          sendToClient(ws, {
+            type: "error",
+            error: "Agent not found or not running",
+          });
+        }
+      } catch (error) {
+        console.error("Kill agent error:", error);
+        sendToClient(ws, {
+          type: "error",
+          error: error instanceof Error ? error.message : "Failed to kill agent",
+        });
+      }
       break;
     }
 

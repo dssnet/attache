@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, nextTick, watch } from "vue";
-import { Send } from "lucide-vue-next";
+import { Send, OctagonX } from "lucide-vue-next";
 import Modal from "./Modal.vue";
 import Button from "../ui/Button.vue";
 import { useMarkdown } from "../../composables/useMarkdown";
@@ -20,6 +20,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   close: [];
   "send-message": [agentId: string, message: string];
+  "kill-agent": [agentId: string];
 }>();
 
 const agentMessageInput = ref("");
@@ -99,16 +100,29 @@ watch(
         <h3 class="text-sm uppercase text-text-secondary mb-3 font-semibold">
           Status
         </h3>
-        <p
-          :class="[
-            'inline-block py-1.5 px-3 rounded-md text-sm font-medium uppercase m-0',
-            agent.status === 'running'
-              ? 'bg-status-running-bg text-status-running-text'
-              : 'bg-status-completed-bg text-status-completed-text',
-          ]"
-        >
-          {{ agent.status }}
-        </p>
+        <div class="flex items-center gap-3">
+          <p
+            :class="[
+              'inline-block py-1.5 px-3 rounded-md text-sm font-medium uppercase m-0',
+              agent.status === 'running'
+                ? 'bg-status-running-bg text-status-running-text'
+                : 'bg-status-completed-bg text-status-completed-text',
+            ]"
+          >
+            {{ agent.status }}
+          </p>
+          <Button
+            v-if="agent.status === 'running'"
+            variant="danger"
+            size="sm"
+            @click="emit('kill-agent', agent.id)"
+          >
+            <span class="flex items-center gap-1.5">
+              <OctagonX :size="14" />
+              Kill Agent
+            </span>
+          </Button>
+        </div>
       </div>
       <div class="mb-6">
         <h3 class="text-sm uppercase text-text-secondary mb-3 font-semibold">
