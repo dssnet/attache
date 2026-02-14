@@ -1,6 +1,6 @@
 {
   "name": "attache",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "module": "src/backend/index.ts",
   "type": "module",
   "description": "A self-hosted AI assistant with tools, agents, and MCP support",
