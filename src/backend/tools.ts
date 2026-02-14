@@ -938,6 +938,97 @@ export function createAgentTools(config: Config, ctx: AgentToolContext): ToolReg
           }
         },
       },
+
+      grep: {
+        definition: tool({
+          description: "Searches file contents for a regex pattern. Returns matching lines with file paths and line numbers. Use this to find code, references, or text across the project.",
+          inputSchema: jsonSchema({
+            type: "object",
+            properties: {
+              pattern: { type: "string", description: "The regex pattern to search for" },
+              path: { type: "string", description: "Directory or file to search in (defaults to working directory)" },
+              glob: { type: "string", description: "Glob pattern to filter files, e.g. '*.ts' or '*.{js,tsx}'" },
+              ignore_case: { type: "boolean", description: "Case-insensitive search (default: false)" },
+              max_results: { type: "number", description: "Maximum number of matching lines to return (default: 100)" },
+            },
+            required: ["pattern"],
+          }),
+        }),
+        handler: async (input: any) => {
+          try {
+            const currentConfig = loadCurrentConfig();
+            if (!currentConfig.tools?.filesystem) {
+              return JSON.stringify({ success: false, error: "Filesystem access is not enabled." });
+            }
+            const searchPath = input.path ? resolve(input.path) : resolve(".");
+            validatePathWithinWorkingDir(searchPath, currentConfig);
+
+            const maxResults = input.max_results || 100;
+            const regex = new RegExp(input.pattern, input.ignore_case ? "i" : "");
+            const matches: Array<{ file: string; line: number; text: string }> = [];
+
+            // Convert glob to regex if provided (supports *.ts, *.{js,tsx} patterns)
+            let globRegex: RegExp | null = null;
+            if (input.glob) {
+              const globPattern = input.glob
+                .replace(/\./g, "\\.")
+                .replace(/\{([^}]+)\}/g, (_: string, group: string) => `(${group.replace(/,/g, "|")})`)
+                .replace(/\*/g, ".*");
+              globRegex = new RegExp(`${globPattern}$`);
+            }
+
+            const SKIP_DIRS = new Set(["node_modules", ".git", "dist", ".next", "__pycache__", ".cache", "coverage"]);
+
+            async function searchDir(dir: string) {
+              if (matches.length >= maxResults) return;
+              const entries = await readdir(dir, { withFileTypes: true });
+              for (const entry of entries) {
+                if (matches.length >= maxResults) return;
+                const fullPath = join(dir, entry.name);
+                if (entry.isDirectory()) {
+                  if (!SKIP_DIRS.has(entry.name) && !entry.name.startsWith(".")) {
+                    await searchDir(fullPath);
+                  }
+                } else if (entry.isFile()) {
+                  if (globRegex && !globRegex.test(entry.name)) continue;
+                  try {
+                    const content = await readFile(fullPath, "utf-8");
+                    const lines = content.split("\n");
+                    for (let i = 0; i < lines.length; i++) {
+                      const line = lines[i]!;
+                      if (regex.test(line)) {
+                        matches.push({ file: fullPath, line: i + 1, text: line.trimEnd() });
+                        if (matches.length >= maxResults) return;
+                      }
+                    }
+                  } catch {
+                    // skip binary/unreadable files
+                  }
+                }
+              }
+            }
+
+            const pathStat = await stat(searchPath);
+            if (pathStat.isFile()) {
+              const content = await readFile(searchPath, "utf-8");
+              const lines = content.split("\n");
+              for (let i = 0; i < lines.length; i++) {
+                const line = lines[i]!;
+                if (regex.test(line)) {
+                  matches.push({ file: searchPath, line: i + 1, text: line.trimEnd() });
+                  if (matches.length >= maxResults) break;
+                }
+              }
+            } else {
+              await searchDir(searchPath);
+            }
+
+            return JSON.stringify({ success: true, matches, totalMatches: matches.length });
+          } catch (error: any) {
+            return JSON.stringify({ success: false, error: error.message });
+          }
+        },
+      },
     });
   }
 
