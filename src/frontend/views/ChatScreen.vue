@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted, watch, computed, type Ref } from "vue";
 import { useWebSocket } from "../composables/useWebSocket";
 import { provideConfig } from "../composables/useConfig";
 import { provideSlashCommands } from "../composables/useSlashCommands";
+import { useSidebarSwipe } from "../composables/useSidebarSwipe";
 import Sidebar from "../components/sidebar/Sidebar.vue";
 import ChatMain from "../components/chat/ChatMain.vue";
 import AgentDetailModal from "../components/modals/AgentDetailModal.vue";
@@ -31,6 +32,12 @@ function toggleSidebar() {
   sidebarCollapsed.value = !sidebarCollapsed.value;
   localStorage.setItem("sidebarCollapsed", String(sidebarCollapsed.value));
 }
+
+const { sidebarRef, overlayRef, isSwiping } = useSidebarSwipe(
+  sidebarCollapsed,
+  toggleSidebar,
+);
+
 const selectedToolCall = ref<{
   toolName: string;
   toolInput: Record<string, any>;
@@ -355,24 +362,20 @@ onUnmounted(() => {
     class="flex h-full bg-bg-primary text-text-primary overflow-hidden"
   >
     <!-- Mobile backdrop -->
-    <Transition
-      enter-active-class="transition-opacity duration-300"
-      enter-from-class="opacity-0"
-      leave-active-class="transition-opacity duration-300"
-      leave-from-class="opacity-100"
-      leave-to-class="opacity-0"
-    >
-      <div
-        v-if="!sidebarCollapsed"
-        class="md:hidden fixed inset-0 z-30 bg-black/30"
-        @click="toggleSidebar"
-      />
-    </Transition>
+    <div
+      ref="overlayRef"
+      :class="[
+        'md:hidden fixed inset-0 z-30 bg-black/30 transition-opacity duration-300',
+        sidebarCollapsed && !isSwiping ? 'opacity-0 pointer-events-none' : 'opacity-100',
+      ]"
+      @click="toggleSidebar"
+    />
 
     <!-- Sidebar wrapper -->
     <div
+      ref="sidebarRef"
       :class="[
-        'shrink-0 overflow-hidden flex',
+        'shrink-0 overflow-hidden flex shadow-2xl md:shadow-none',
         'fixed inset-y-0 left-0 z-40 w-4/5 max-w-80 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] bg-bg-secondary',
         'md:relative md:inset-auto md:z-auto md:max-w-none md:pt-0 md:pb-0 md:pl-0 md:bg-transparent',
         'transition-transform duration-300 ease-in-out',

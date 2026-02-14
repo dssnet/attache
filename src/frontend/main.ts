@@ -24,4 +24,23 @@ if (window.visualViewport) {
   );
 }
 
+// Sync <meta name="theme-color"> with current data-theme attribute
+function syncThemeColor() {
+  const isLight =
+    document.documentElement.getAttribute("data-theme") === "light";
+  const color = isLight ? "#ffffff" : "#151515";
+  document
+    .querySelectorAll('meta[name="theme-color"]')
+    .forEach((meta) => meta.setAttribute("content", color));
+}
+
+new MutationObserver((mutations) => {
+  for (const m of mutations) {
+    if (m.attributeName === "data-theme") syncThemeColor();
+  }
+}).observe(document.documentElement, {
+  attributes: true,
+  attributeFilter: ["data-theme"],
+});
+
 createApp(App).mount("#app");

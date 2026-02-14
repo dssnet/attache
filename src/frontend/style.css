@@ -115,7 +115,8 @@
   body {
     height: 100dvh;
     overflow: hidden;
-    touch-action: pan-x pan-y;
+    touch-action: manipulation;
+    overscroll-behavior: none;
   }
 
   body {
@@ -124,6 +125,55 @@
       Arial, sans-serif;
     background: var(--color-bg-primary);
     color: var(--color-text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  button,
+  a,
+  [role="button"],
+  input,
+  textarea,
+  select,
+  [tabindex],
+  .cursor-pointer {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+  }
+
+  #app {
+    height: 100%;
+    padding-bottom: max(env(safe-area-inset-bottom), var(--keyboard-height, 0px));
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  .markdown-content,
+  textarea,
+  input,
+  pre,
+  code,
+  [contenteditable] {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+
+  .overflow-y-auto,
+  .overflow-x-auto,
+  .overflow-auto {
+    scrollbar-width: none;
+  }
+  .overflow-y-auto::-webkit-scrollbar,
+  .overflow-x-auto::-webkit-scrollbar,
+  .overflow-auto::-webkit-scrollbar {
+    display: none;
+  }
+
+  button:active:not(:disabled),
+  [role="button"]:active,
+  .cursor-pointer:active {
+    opacity: 0.7;
+    transition: opacity 0.05s ease-out;
   }
 
   /* Light theme overrides */
@@ -180,9 +230,4 @@
     /* Logo filter (none for light mode) */
     --logo-filter: none;
   }
-}
-
-#app {
-  height: 100%;
-  padding-bottom: max(env(safe-area-inset-bottom), var(--keyboard-height, 0px));
 }
