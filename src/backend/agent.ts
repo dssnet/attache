@@ -431,6 +431,7 @@ async function runAgentLoop(
     onSendToMain: agentEventCallback.onSendToMain,
     agentDisplayMessages: agent.displayMessages,
     updateActivityTime: () => { agent.lastActivityTime = Date.now(); },
+    readFiles: new Map(),
   };
 
   const toolRegistry = createAgentTools(config, ctx);

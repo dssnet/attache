@@ -382,6 +382,7 @@ export interface AgentToolContext {
   onSendToMain?: (message: string, agentId: string) => void;
   agentDisplayMessages: AgentDisplayMessage[];
   updateActivityTime: () => void;
+  readFiles: Map<string, number>; // path -> last modified time (ms)
 }
 
 /**
@@ -793,6 +794,8 @@ export function createAgentTools(config: Config, ctx: AgentToolContext): ToolReg
             const targetPath = resolve(input.path);
             validatePathWithinWorkingDir(targetPath, currentConfig);
             const content = await readFile(targetPath, "utf-8");
+            const fileStat = await stat(targetPath);
+            ctx.readFiles.set(targetPath, fileStat.mtimeMs);
             return JSON.stringify({ success: true, path: targetPath, content });
           } catch (error: any) {
             return JSON.stringify({ success: false, error: error.message });
@@ -802,7 +805,7 @@ export function createAgentTools(config: Config, ctx: AgentToolContext): ToolReg
 
       write_file: {
         definition: tool({
-          description: "Writes content to a file. Creates the file if it doesn't exist, overwrites if it does.",
+          description: "Writes content to a file. Creates the file if it doesn't exist, overwrites if it does. If the file already exists, you MUST read it with read_file first before writing.",
           inputSchema: jsonSchema({
             type: "object",
             properties: {
@@ -820,9 +823,31 @@ export function createAgentTools(config: Config, ctx: AgentToolContext): ToolReg
             }
             const targetPath = resolve(input.path);
             validatePathWithinWorkingDir(targetPath, currentConfig);
+
+            // Check if file already exists — if so, enforce read-before-write
+            try {
+              const fileStat = await stat(targetPath);
+              // File exists — must have been read first
+              const lastReadMtime = ctx.readFiles.get(targetPath);
+              if (lastReadMtime === undefined) {
+                return JSON.stringify({ success: false, error: "Cannot overwrite an existing file without reading it first. Use read_file before write_file." });
+              }
+              if (fileStat.mtimeMs !== lastReadMtime) {
+                return JSON.stringify({ success: false, error: "File has been modified since it was last read. Read it again with read_file before writing." });
+              }
+            } catch (e: any) {
+              // File doesn't exist — that's fine, we're creating a new file
+              if (e.code !== "ENOENT") throw e;
+            }
+
             const dir = normalize(join(targetPath, ".."));
             await mkdir(dir, { recursive: true });
             await writeFile(targetPath, input.content, "utf-8");
+
+            // Update the read map with the new mtime
+            const newStat = await stat(targetPath);
+            ctx.readFiles.set(targetPath, newStat.mtimeMs);
+
             return JSON.stringify({ success: true, path: targetPath, message: "File written successfully" });
           } catch (error: any) {
             return JSON.stringify({ success: false, error: error.message });
