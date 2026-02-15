@@ -53,7 +53,7 @@ const emit = defineEmits<{
   >
     <!-- Mobile top bar -->
     <div
-      class="md:hidden flex items-center justify-between px-3 py-2 pt-[max(0.5rem,env(safe-area-inset-top))] bg-bg-secondary border-b border-border-primary z-20"
+      class="md:hidden flex items-center justify-between px-3 py-2 pt-[max(0.5rem,env(safe-area-inset-top))] bg-bg-secondary/80 backdrop-blur-md border-b border-border-primary z-20"
     >
       <Button
         variant="ghost"

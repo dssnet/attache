@@ -365,7 +365,7 @@ onUnmounted(() => {
     <div
       ref="overlayRef"
       :class="[
-        'md:hidden fixed inset-0 z-30 bg-black/30 transition-opacity duration-300',
+        'md:hidden fixed inset-0 z-30 bg-black/30 backdrop-blur-sm transition-opacity duration-300',
         sidebarCollapsed && !isSwiping ? 'opacity-0 pointer-events-none' : 'opacity-100',
       ]"
       @click="toggleSidebar"
@@ -375,7 +375,7 @@ onUnmounted(() => {
     <div
       ref="sidebarRef"
       :class="[
-        'shrink-0 overflow-hidden flex shadow-2xl md:shadow-none',
+        'shrink-0 overflow-hidden flex shadow-[var(--shadow-sidebar)] border-r border-white/[0.06] md:shadow-none md:border-r-0',
         'fixed inset-y-0 left-0 z-40 w-4/5 max-w-80 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] bg-bg-secondary',
         'md:relative md:inset-auto md:z-auto md:max-w-none md:pt-0 md:pb-0 md:pl-0 md:bg-transparent',
         'transition-transform duration-300 ease-in-out',

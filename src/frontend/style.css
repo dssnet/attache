@@ -49,6 +49,9 @@
   /* Overlay/backdrop */
   --color-overlay: rgba(0, 0, 0, 0.8);
 
+  /* Sidebar shadow (needs to be visible on dark backgrounds) */
+  --shadow-sidebar: 8px 0 30px rgba(0, 0, 0, 0.8);
+
   /* Error banner */
   --color-error-bg: #7f1d1d;
   --color-error-text: #fecaca;
@@ -217,6 +220,9 @@
 
     /* Overlay/backdrop */
     --color-overlay: rgba(0, 0, 0, 0.5);
+
+    /* Sidebar shadow */
+    --shadow-sidebar: 8px 0 24px rgba(0, 0, 0, 0.15);
 
     /* Error banner */
     --color-error-bg: #fecaca;
