@@ -778,10 +778,14 @@ export function createAgentTools(config: Config, ctx: AgentToolContext): ToolReg
 
       read_file: {
         definition: tool({
-          description: "Reads the contents of a file and returns it as text.",
+          description: "Reads the contents of a file and returns it as text. Use from_line/to_line to read specific line ranges instead of the entire file — this saves context. After using grep to find matches, use this with a line range to read the surrounding code.",
           inputSchema: jsonSchema({
             type: "object",
-            properties: { path: { type: "string", description: "The file path to read" } },
+            properties: {
+              path: { type: "string", description: "The file path to read" },
+              from_line: { type: "number", description: "Start reading from this line number (1-based, inclusive). Omit to start from beginning." },
+              to_line: { type: "number", description: "Stop reading at this line number (1-based, inclusive). Omit to read to end." },
+            },
             required: ["path"],
           }),
         }),
@@ -796,7 +800,20 @@ export function createAgentTools(config: Config, ctx: AgentToolContext): ToolReg
             const content = await readFile(targetPath, "utf-8");
             const fileStat = await stat(targetPath);
             ctx.readFiles.set(targetPath, fileStat.mtimeMs);
-            return JSON.stringify({ success: true, path: targetPath, content });
+
+            const allLines = content.split("\n");
+            const totalLines = allLines.length;
+            const fromLine = input.from_line ? Math.max(1, input.from_line) : 1;
+            const toLine = input.to_line ? Math.min(totalLines, input.to_line) : totalLines;
+
+            if (input.from_line || input.to_line) {
+              // Return specific line range with line numbers
+              const selectedLines = allLines.slice(fromLine - 1, toLine);
+              const numbered = selectedLines.map((line, i) => `${fromLine + i}: ${line}`).join("\n");
+              return JSON.stringify({ success: true, path: targetPath, totalLines, from: fromLine, to: toLine, content: numbered });
+            }
+
+            return JSON.stringify({ success: true, path: targetPath, totalLines, content });
           } catch (error: any) {
             return JSON.stringify({ success: false, error: error.message });
           }
@@ -941,7 +958,7 @@ export function createAgentTools(config: Config, ctx: AgentToolContext): ToolReg
 
       grep: {
         definition: tool({
-          description: "Searches file contents for a regex pattern. Returns matching lines with file paths and line numbers. Use this to find code, references, or text across the project.",
+          description: "Searches file contents for a regex pattern. Returns an array of compact matches (file path, line number, and a short snippet around the match). Use this to locate code, then use read_file with from_line/to_line to read the surrounding context.",
           inputSchema: jsonSchema({
             type: "object",
             properties: {
@@ -949,7 +966,7 @@ export function createAgentTools(config: Config, ctx: AgentToolContext): ToolReg
               path: { type: "string", description: "Directory or file to search in (defaults to working directory)" },
               glob: { type: "string", description: "Glob pattern to filter files, e.g. '*.ts' or '*.{js,tsx}'" },
               ignore_case: { type: "boolean", description: "Case-insensitive search (default: false)" },
-              max_results: { type: "number", description: "Maximum number of matching lines to return (default: 100)" },
+              max_results: { type: "number", description: "Maximum number of matches to return (default: 50)" },
             },
             required: ["pattern"],
           }),
@@ -963,9 +980,10 @@ export function createAgentTools(config: Config, ctx: AgentToolContext): ToolReg
             const searchPath = input.path ? resolve(input.path) : resolve(".");
             validatePathWithinWorkingDir(searchPath, currentConfig);
 
-            const maxResults = input.max_results || 100;
-            const regex = new RegExp(input.pattern, input.ignore_case ? "i" : "");
-            const matches: Array<{ file: string; line: number; text: string }> = [];
+            const maxResults = input.max_results || 50;
+            const MAX_SNIPPET_LENGTH = 200;
+            const regex = new RegExp(input.pattern, input.ignore_case ? "gi" : "g");
+            const matches: Array<{ file: string; line: number; snippet: string }> = [];
 
             // Convert glob to regex if provided (supports *.ts, *.{js,tsx} patterns)
             let globRegex: RegExp | null = null;
@@ -978,6 +996,12 @@ export function createAgentTools(config: Config, ctx: AgentToolContext): ToolReg
             }
 
             const SKIP_DIRS = new Set(["node_modules", ".git", "dist", ".next", "__pycache__", ".cache", "coverage"]);
+
+            function truncateLine(line: string): string {
+              const trimmed = line.trim();
+              if (trimmed.length <= MAX_SNIPPET_LENGTH) return trimmed;
+              return trimmed.slice(0, MAX_SNIPPET_LENGTH) + "…";
+            }
 
             async function searchDir(dir: string) {
               if (matches.length >= maxResults) return;
@@ -996,8 +1020,9 @@ export function createAgentTools(config: Config, ctx: AgentToolContext): ToolReg
                     const lines = content.split("\n");
                     for (let i = 0; i < lines.length; i++) {
                       const line = lines[i]!;
+                      regex.lastIndex = 0;
                       if (regex.test(line)) {
-                        matches.push({ file: fullPath, line: i + 1, text: line.trimEnd() });
+                        matches.push({ file: fullPath, line: i + 1, snippet: truncateLine(line) });
                         if (matches.length >= maxResults) return;
                       }
                     }
@@ -1014,8 +1039,9 @@ export function createAgentTools(config: Config, ctx: AgentToolContext): ToolReg
               const lines = content.split("\n");
               for (let i = 0; i < lines.length; i++) {
                 const line = lines[i]!;
+                regex.lastIndex = 0;
                 if (regex.test(line)) {
-                  matches.push({ file: searchPath, line: i + 1, text: line.trimEnd() });
+                  matches.push({ file: searchPath, line: i + 1, snippet: truncateLine(line) });
                   if (matches.length >= maxResults) break;
                 }
               }
@@ -1023,7 +1049,196 @@ export function createAgentTools(config: Config, ctx: AgentToolContext): ToolReg
               await searchDir(searchPath);
             }
 
-            return JSON.stringify({ success: true, matches, totalMatches: matches.length });
+            return JSON.stringify({ success: true, matches, total: matches.length });
+          } catch (error: any) {
+            return JSON.stringify({ success: false, error: error.message });
+          }
+        },
+      },
+
+      edit_file: {
+        definition: tool({
+          description: "Makes a targeted edit to a file by replacing an exact string match. Much more efficient than read_file + write_file for small changes. The old_string must appear exactly once in the file to avoid ambiguous edits. You must have read the file with read_file first.",
+          inputSchema: jsonSchema({
+            type: "object",
+            properties: {
+              path: { type: "string", description: "The file path to edit" },
+              old_string: { type: "string", description: "The exact string to find and replace (must be unique in the file)" },
+              new_string: { type: "string", description: "The replacement string" },
+            },
+            required: ["path", "old_string", "new_string"],
+          }),
+        }),
+        handler: async (input: any) => {
+          try {
+            const currentConfig = loadCurrentConfig();
+            if (!currentConfig.tools?.filesystem) {
+              return JSON.stringify({ success: false, error: "Filesystem access is not enabled." });
+            }
+            const targetPath = resolve(input.path);
+            validatePathWithinWorkingDir(targetPath, currentConfig);
+
+            // Enforce read-before-edit
+            const lastReadMtime = ctx.readFiles.get(targetPath);
+            if (lastReadMtime === undefined) {
+              return JSON.stringify({ success: false, error: "You must read the file with read_file before editing it." });
+            }
+            const fileStat = await stat(targetPath);
+            if (fileStat.mtimeMs !== lastReadMtime) {
+              return JSON.stringify({ success: false, error: "File has been modified since it was last read. Read it again with read_file before editing." });
+            }
+
+            const content = await readFile(targetPath, "utf-8");
+            const oldStr = input.old_string;
+            const newStr = input.new_string;
+
+            if (oldStr === newStr) {
+              return JSON.stringify({ success: false, error: "old_string and new_string are identical." });
+            }
+
+            // Count occurrences
+            const occurrences = content.split(oldStr).length - 1;
+            if (occurrences === 0) {
+              return JSON.stringify({ success: false, error: "old_string not found in file." });
+            }
+            if (occurrences > 1) {
+              return JSON.stringify({ success: false, error: `old_string found ${occurrences} times — it must be unique. Include more surrounding context to make it unique.` });
+            }
+
+            const newContent = content.replace(oldStr, newStr);
+            await writeFile(targetPath, newContent, "utf-8");
+
+            // Update mtime
+            const newStat = await stat(targetPath);
+            ctx.readFiles.set(targetPath, newStat.mtimeMs);
+
+            return JSON.stringify({ success: true, path: targetPath, message: "Edit applied successfully" });
+          } catch (error: any) {
+            return JSON.stringify({ success: false, error: error.message });
+          }
+        },
+      },
+
+      find_files: {
+        definition: tool({
+          description: "Finds files matching a glob pattern. Returns an array of file paths. Use this to quickly locate files by name instead of recursively calling list_directory. Supports patterns like '*.ts', '**/*.vue', 'src/**/*.test.ts'.",
+          inputSchema: jsonSchema({
+            type: "object",
+            properties: {
+              pattern: { type: "string", description: "Glob pattern to match, e.g. '*.ts', '**/*.vue', 'src/components/*.tsx'" },
+              path: { type: "string", description: "Base directory to search in (defaults to working directory)" },
+              max_results: { type: "number", description: "Maximum number of files to return (default: 100)" },
+            },
+            required: ["pattern"],
+          }),
+        }),
+        handler: async (input: any) => {
+          try {
+            const currentConfig = loadCurrentConfig();
+            if (!currentConfig.tools?.filesystem) {
+              return JSON.stringify({ success: false, error: "Filesystem access is not enabled." });
+            }
+            const basePath = input.path ? resolve(input.path) : resolve(".");
+            validatePathWithinWorkingDir(basePath, currentConfig);
+
+            const maxResults = input.max_results || 100;
+            const results: string[] = [];
+            const SKIP_DIRS = new Set(["node_modules", ".git", "dist", ".next", "__pycache__", ".cache", "coverage"]);
+
+            // Convert glob to regex: support **, *, ?
+            const globToRegex = (glob: string): RegExp => {
+              const parts = glob.split("/");
+              let regexStr = "";
+              for (let i = 0; i < parts.length; i++) {
+                if (i > 0) regexStr += "/";
+                const part = parts[i]!;
+                if (part === "**") {
+                  regexStr += "(.+/)?";
+                  // Consume the next separator since ** matches directories
+                  if (i < parts.length - 1) {
+                    i++;
+                    regexStr += parts[i]!
+                      .replace(/\./g, "\\.")
+                      .replace(/\{([^}]+)\}/g, (_: string, g: string) => `(${g.replace(/,/g, "|")})`)
+                      .replace(/\*\*/g, "(.+/)?")
+                      .replace(/\*/g, "[^/]*")
+                      .replace(/\?/g, "[^/]");
+                  }
+                } else {
+                  regexStr += part
+                    .replace(/\./g, "\\.")
+                    .replace(/\{([^}]+)\}/g, (_: string, g: string) => `(${g.replace(/,/g, "|")})`)
+                    .replace(/\*/g, "[^/]*")
+                    .replace(/\?/g, "[^/]");
+                }
+              }
+              return new RegExp(`^${regexStr}$`);
+            };
+
+            const regex = globToRegex(input.pattern);
+
+            async function searchDir(dir: string, relativePrefix: string) {
+              if (results.length >= maxResults) return;
+              const entries = await readdir(dir, { withFileTypes: true });
+              for (const entry of entries) {
+                if (results.length >= maxResults) return;
+                const fullPath = join(dir, entry.name);
+                const relativePath = relativePrefix ? `${relativePrefix}/${entry.name}` : entry.name;
+                if (entry.isDirectory()) {
+                  if (!SKIP_DIRS.has(entry.name) && !entry.name.startsWith(".")) {
+                    await searchDir(fullPath, relativePath);
+                  }
+                } else if (entry.isFile()) {
+                  if (regex.test(relativePath)) {
+                    results.push(fullPath);
+                  }
+                }
+              }
+            }
+
+            await searchDir(basePath, "");
+            return JSON.stringify({ success: true, files: results, total: results.length });
+          } catch (error: any) {
+            return JSON.stringify({ success: false, error: error.message });
+          }
+        },
+      },
+
+      file_info: {
+        definition: tool({
+          description: "Gets information about a file or directory without reading its contents. Returns existence, type (file/directory), size, and last modified time. Use this to quickly check if a path exists or how large a file is before reading it.",
+          inputSchema: jsonSchema({
+            type: "object",
+            properties: {
+              path: { type: "string", description: "The file or directory path to check" },
+            },
+            required: ["path"],
+          }),
+        }),
+        handler: async (input: any) => {
+          try {
+            const currentConfig = loadCurrentConfig();
+            if (!currentConfig.tools?.filesystem) {
+              return JSON.stringify({ success: false, error: "Filesystem access is not enabled." });
+            }
+            const targetPath = resolve(input.path);
+            validatePathWithinWorkingDir(targetPath, currentConfig);
+            try {
+              const fileStat = await stat(targetPath);
+              return JSON.stringify({
+                success: true,
+                path: targetPath,
+                exists: true,
+                type: fileStat.isDirectory() ? "directory" : "file",
+                size: fileStat.size,
+                modified: fileStat.mtime.toISOString(),
+              });
+            } catch (e: any) {
+              if (e.code === "ENOENT") {
+                return JSON.stringify({ success: true, path: targetPath, exists: false });
+              }
+              throw e;
+            }
           } catch (error: any) {
             return JSON.stringify({ success: false, error: error.message });
           }

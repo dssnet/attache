@@ -370,11 +370,15 @@ export async function clearAllAgents(): Promise<void> {
 function buildAgentSystemPrompt(config: Config, agentId: string): string {
   const fsToolsList = config.tools?.filesystem
     ? `\n- list_directory: List files and directories at a path
-- read_file: Read file contents
+- read_file: Read file contents (supports from_line/to_line for partial reads — use this to save context)
 - write_file: Write content to a file (creates or overwrites)
 - create_directory: Create a directory (with parents)
 - delete_path: Delete a file or directory
-- move_path: Move or rename a file or directory`
+- move_path: Move or rename a file or directory
+- grep: Search file contents for a regex pattern (returns compact matches with file, line number, and snippet — use read_file with line range to see full context)
+- edit_file: Make a targeted search-and-replace edit (much more efficient than read_file + write_file for small changes)
+- find_files: Find files matching a glob pattern (e.g. '*.ts', '**/*.vue')
+- file_info: Check if a path exists, get its type and size without reading contents`
     : "";
 
   const terminalToolsList = config.tools?.terminal
