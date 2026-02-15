@@ -52,8 +52,25 @@ function onContentClick(e: MouseEvent) {
       // which opens the native share sheet (Save to Files on iOS, etc.)
       // Only use share on mobile — desktop browsers handle <a download> fine.
       const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-      if (isMobile && navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file] });
+      if (isMobile) {
+        // Try Web Share API directly — skip canShare() which Android WebView
+        // may not support even when navigator.share works fine with files.
+        let shared = false;
+        if (navigator.share) {
+          try {
+            await navigator.share({ files: [file] });
+            shared = true;
+          } catch (e) {
+            // User dismissed the share sheet — re-throw so the outer catch handles it
+            if (e instanceof DOMException && e.name === "AbortError") throw e;
+            // Share not supported for files — fall through to URL fallback
+          }
+        }
+        if (!shared) {
+          // Last resort: open the server URL directly. The server sends
+          // Content-Disposition: attachment so the browser will download it.
+          window.open(url.toString(), "_blank");
+        }
       } else {
         const blobUrl = URL.createObjectURL(blob);
         const a = document.createElement("a");
