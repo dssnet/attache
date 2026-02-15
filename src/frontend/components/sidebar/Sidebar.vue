@@ -49,12 +49,14 @@ const emit = defineEmits<{
       @collapse-sidebar="emit('collapse-sidebar')"
     />
 
-    <div class="flex-1 overflow-y-auto p-2">
-      <AgentsList
-        :agents="agents"
-        @agent-click="(id: string) => emit('agent-click', id)"
-        @clear-agents="emit('clear-agents')"
-      />
+    <div class="flex-1 overflow-y-scroll p-2">
+      <div class="in-[.is-mobile]:min-h-[calc(100%+1px)]">
+        <AgentsList
+          :agents="agents"
+          @agent-click="(id: string) => emit('agent-click', id)"
+          @clear-agents="emit('clear-agents')"
+        />
+      </div>
     </div>
 
     <div class="border-t border-border-primary p-3 flex flex-col gap-1">

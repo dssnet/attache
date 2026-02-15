@@ -49,7 +49,7 @@ const { modalRef } = useModalSwipe(() => emit("close"));
               <slot name="title-icon" />
             </template>
           </ModalHeader>
-          <div :class="['overflow-y-auto flex-1', noPadding ? '' : 'p-6']">
+          <div :class="['overflow-y-scroll flex-1', noPadding ? '' : 'p-6']">
             <slot />
           </div>
         </div>

@@ -102,27 +102,29 @@ watch(
         <div
           class="max-md:w-full max-md:shrink-0 md:flex-1 flex flex-col h-full min-h-0"
         >
-          <div class="flex-1 overflow-y-auto">
-            <!-- Config sections use v-show to stay mounted (preserves state) -->
-            <ModelSection v-show="activeSection === 'model'" />
+          <div class="flex-1 overflow-y-scroll">
+            <div class="min-h-[calc(100%+1px)]">
+              <!-- Config sections use v-show to stay mounted (preserves state) -->
+              <ModelSection v-show="activeSection === 'model'" />
 
-            <ToolsSection v-show="activeSection === 'tools'" />
+              <ToolsSection v-show="activeSection === 'tools'" />
 
-            <MemorySection v-show="activeSection === 'memory'" />
+              <MemorySection v-show="activeSection === 'memory'" />
 
-            <McpServersSection v-show="activeSection === 'mcp'" />
+              <McpServersSection v-show="activeSection === 'mcp'" />
 
-            <!-- Simple sections use v-if (no state to preserve) -->
-            <AppearanceSection
-              v-if="activeSection === 'appearance'"
-              :theme="theme"
-              @set-theme="emit('set-theme', $event)"
-            />
+              <!-- Simple sections use v-if (no state to preserve) -->
+              <AppearanceSection
+                v-if="activeSection === 'appearance'"
+                :theme="theme"
+                @set-theme="emit('set-theme', $event)"
+              />
 
-            <AccountSection
-              v-if="activeSection === 'account'"
-              @logout="emit('logout')"
-            />
+              <AccountSection
+                v-if="activeSection === 'account'"
+                @logout="emit('logout')"
+              />
+            </div>
           </div>
         </div>
       </div>

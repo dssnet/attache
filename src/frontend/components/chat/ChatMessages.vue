@@ -160,9 +160,9 @@ defineExpose({ messagesContainer, pinnedToBottom, scrollToBottom });
 <template>
   <div
     ref="messagesContainer"
-    class="flex flex-1 overflow-y-auto w-full flex-col relative px-4 pr-[max(1rem,env(safe-area-inset-right))] pb-2"
+    class="flex flex-1 overflow-y-scroll w-full flex-col relative px-4 pr-[max(1rem,env(safe-area-inset-right))] py-2"
   >
-    <div class="max-w-200 mx-auto w-full gap-2 flex flex-col mt-auto">
+    <div class="max-w-200 mx-auto w-full gap-2 flex flex-col in-[.is-mobile]:min-h-[calc(100%+1px)]">
       <template v-for="(msg, msgIndex) in visibleMessages" :key="msgIndex">
         <!-- Agent messages: always show as a clickable label -->
         <AgentMessageLabel
@@ -227,3 +227,4 @@ defineExpose({ messagesContainer, pinnedToBottom, scrollToBottom });
     </div>
   </div>
 </template>
+

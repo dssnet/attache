@@ -22,18 +22,20 @@ function selectSection(id: string) {
 <template>
   <!-- Mobile: full-screen menu list (always rendered for slide animation) -->
   <nav
-    class="md:hidden w-full shrink-0 overflow-y-auto p-3 flex flex-col gap-0.5"
+    class="md:hidden w-full shrink-0 overflow-y-scroll p-3"
   >
-    <button
-      v-for="section in sections"
-      :key="section.id"
-      class="flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium transition-colors w-full text-left text-text-primary"
-      @click="selectSection(section.id)"
-    >
-      <component :is="section.icon" :size="18" class="text-text-secondary" />
-      {{ section.label }}
-      <ChevronRight :size="16" class="ml-auto text-text-muted" />
-    </button>
+    <div class="min-h-[calc(100%+1px)] flex flex-col gap-0.5">
+      <button
+        v-for="section in sections"
+        :key="section.id"
+        class="flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium transition-colors w-full text-left text-text-primary"
+        @click="selectSection(section.id)"
+      >
+        <component :is="section.icon" :size="18" class="text-text-secondary" />
+        {{ section.label }}
+        <ChevronRight :size="16" class="ml-auto text-text-muted" />
+      </button>
+    </div>
   </nav>
 
   <!-- Desktop: vertical sidebar (always visible) -->
