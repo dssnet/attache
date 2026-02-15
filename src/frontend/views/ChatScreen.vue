@@ -78,16 +78,26 @@ const {
   unsubscribeAgent: wsUnsubscribeAgent,
   stopGeneration: wsStopGeneration,
   restartServer: wsRestartServer,
+  updateAvailable,
+  latestVersion,
+  upgrading,
+  upgradeStep,
+  startUpgrade: wsStartUpgrade,
 } = useWebSocket();
 
 provideConfig({
   config,
   configSaving,
   mcpStatus,
+  updateAvailable,
+  latestVersion,
+  upgrading,
+  upgradeStep,
   getConfig: wsGetConfig,
   updateConfig: wsUpdateConfig,
   getMcpStatus: wsGetMcpStatus,
   restartServer: wsRestartServer,
+  startUpgrade: wsStartUpgrade,
 });
 
 // Filter out empty assistant messages

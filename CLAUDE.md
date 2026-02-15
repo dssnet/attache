@@ -46,32 +46,21 @@ The app supports dark and light themes via CSS variables in `src/frontend/style.
 
 Always use CSS variable classes - never hardcode colors or use inline theme overrides:
 
-```vue
-<!-- CORRECT -->
-<div class="bg-bg-secondary text-text-primary border-border-primary">
-
-<!-- WRONG - don't hardcode colors -->
-<div class="bg-[#171717]">
-
-<!-- WRONG - don't use inline theme overrides -->
-<div class="bg-[#171717] [[data-theme='light'] &]:bg-white">
-```
-
 ### Available Color Variables
 
-| Variable | Dark | Light | Usage |
-|----------|------|-------|-------|
-| `bg-primary` | #151515 | #ffffff | Main background |
-| `bg-secondary` | #1b1b1b | #f5f5f5 | Sidebar, cards |
-| `bg-tertiary` | #2a4870 | #e8f4fd | Agent message bubbles |
-| `bg-hover` | #252525 | #e5e5e5 | Hover states |
-| `bg-input` | #171717 | #f5f5f5 | Input fields, code blocks |
-| `bg-card` | #1b1b1b | #ffffff | Cards inside containers |
-| `bg-message` | #2f2f2f | #f5f5f5 | Assistant message bubbles |
-| `text-primary` | #ececec | #1a1a1a | Primary text |
-| `text-secondary` | #8e8e8e | #737373 | Secondary text |
-| `border-primary` | #3f3f3f | #d4d4d4 | Primary borders |
-| `primary` | #007fff | #007fff | Brand blue (both themes) |
+| Variable         | Dark    | Light   | Usage                     |
+| ---------------- | ------- | ------- | ------------------------- |
+| `bg-primary`     | #151515 | #ffffff | Main background           |
+| `bg-secondary`   | #1b1b1b | #f5f5f5 | Sidebar, cards            |
+| `bg-tertiary`    | #2a4870 | #e8f4fd | Agent message bubbles     |
+| `bg-hover`       | #252525 | #e5e5e5 | Hover states              |
+| `bg-input`       | #171717 | #f5f5f5 | Input fields, code blocks |
+| `bg-card`        | #1b1b1b | #ffffff | Cards inside containers   |
+| `bg-message`     | #2f2f2f | #f5f5f5 | Assistant message bubbles |
+| `text-primary`   | #ececec | #1a1a1a | Primary text              |
+| `text-secondary` | #8e8e8e | #737373 | Secondary text            |
+| `border-primary` | #3f3f3f | #d4d4d4 | Primary borders           |
+| `primary`        | #007fff | #007fff | Brand blue (both themes)  |
 
 ### Adding New Theme Variables
 

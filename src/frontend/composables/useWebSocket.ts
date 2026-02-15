@@ -23,7 +23,9 @@ type ClientMessage =
   | { type: "subscribe_agent"; agentId: string }
   | { type: "unsubscribe_agent"; agentId: string }
   | { type: "stop_generation" }
-  | { type: "kill_agent"; agentId: string };
+  | { type: "kill_agent"; agentId: string }
+  | { type: "check_update" }
+  | { type: "start_upgrade" };
 
 export interface AgentDisplayMessage {
   type: "thinking" | "tool_call" | "send_to_main" | "user_message" | "system";
@@ -89,6 +91,10 @@ type ServerMessage =
   | { type: "agent_detail"; agentId: string; displayMessages: AgentDisplayMessage[] }
   | { type: "compact_start" }
   | { type: "compact_complete" }
+  | { type: "update_available"; currentVersion: string; latestVersion: string; available: boolean }
+  | { type: "upgrade_progress"; step: string }
+  | { type: "upgrade_complete" }
+  | { type: "upgrade_error"; error: string }
   | { type: "ping" };
 
 export function useWebSocket() {
@@ -107,6 +113,10 @@ export function useWebSocket() {
   const mcpStatus = ref<
     Array<{ name: string; status: string; toolCount: number; error?: string }>
   >([]);
+  const updateAvailable = ref(false);
+  const latestVersion = ref<string | null>(null);
+  const upgrading = ref(false);
+  const upgradeStep = ref<string | null>(null);
 
   const toast = useToast();
 
@@ -364,6 +374,28 @@ export function useWebSocket() {
           },
         ];
         break;
+
+      case "update_available":
+        updateAvailable.value = message.available;
+        latestVersion.value = message.latestVersion;
+        break;
+
+      case "upgrade_progress":
+        upgrading.value = true;
+        upgradeStep.value = message.step;
+        break;
+
+      case "upgrade_complete":
+        upgrading.value = false;
+        upgradeStep.value = null;
+        toast.success("Upgrade complete! Reconnecting...");
+        break;
+
+      case "upgrade_error":
+        upgrading.value = false;
+        upgradeStep.value = null;
+        toast.error(`Upgrade failed: ${message.error}`);
+        break;
     }
   }
 
@@ -439,6 +471,14 @@ export function useWebSocket() {
     send({ type: "restart_server" });
   }
 
+  function checkUpdate() {
+    send({ type: "check_update" });
+  }
+
+  function startUpgrade() {
+    send({ type: "start_upgrade" });
+  }
+
   function disconnect() {
     if (reconnectTimeout) {
       clearTimeout(reconnectTimeout);
@@ -486,6 +526,12 @@ export function useWebSocket() {
     killAgent,
     stopGeneration,
     restartServer,
+    updateAvailable,
+    latestVersion,
+    upgrading,
+    upgradeStep,
+    checkUpdate,
+    startUpgrade,
     disconnect,
   };
 }

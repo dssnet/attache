@@ -1,12 +1,26 @@
 <script setup lang="ts">
-import { PanelLeft } from "lucide-vue-next";
+import { PanelLeft, ArrowUpCircle } from "lucide-vue-next";
 import Button from "../ui/Button.vue";
+import { useConfig } from "../../composables/useConfig";
+
+const { updateAvailable, latestVersion, upgrading, upgradeStep, startUpgrade } =
+  useConfig();
 
 const emit = defineEmits<{
   copy: [];
   "clear-context": [];
   "collapse-sidebar": [];
 }>();
+
+function handleUpgrade() {
+  if (
+    confirm(
+      `Update to v${latestVersion.value}? The server will restart after upgrading.`,
+    )
+  ) {
+    startUpgrade();
+  }
+}
 </script>
 
 <template>
@@ -19,7 +33,27 @@ const emit = defineEmits<{
       />
       <span class="font-semibold text-base text-text-primary">Attaché</span>
     </div>
-    <div class="flex gap-2">
+    <div class="flex gap-1 items-center">
+      <Button
+        v-if="updateAvailable"
+        variant="ghost"
+        icon
+        size="sm"
+        :loading="upgrading"
+        :title="
+          upgrading
+            ? (upgradeStep ?? 'Upgrading...')
+            : `Update available: v${latestVersion}`
+        "
+        @click="handleUpgrade"
+        class="text-primary relative"
+      >
+        <ArrowUpCircle :size="18" />
+        <span
+          v-if="!upgrading"
+          class="absolute top-1 right-1 w-2 h-2 bg-green-500 rounded-full"
+        />
+      </Button>
       <Button
         variant="ghost"
         icon

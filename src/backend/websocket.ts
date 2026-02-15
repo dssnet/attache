@@ -7,6 +7,7 @@ import { loadConfig, saveConfig } from "./config.ts";
 import { shouldAutoCompact, compactMessages } from "./compact.ts";
 import { setAgentEventCallback, clearAllAgents, getAllAgentsInfo, getAgentDetail, sendToAgent, killAgent } from "./agent.ts";
 import { triggerRestart } from "./utils.ts";
+import { checkForUpdate, getCachedUpdate, performUpgrade, startPeriodicCheck } from "./update.ts";
 
 interface WebSocketData {
   authenticated: boolean;
@@ -41,6 +42,16 @@ setInterval(() => {
     }
   }
 }, HEARTBEAT_INTERVAL_MS);
+
+// Periodic update check — broadcast to all clients when an update is found
+startPeriodicCheck((info) => {
+  broadcast({
+    type: "update_available",
+    currentVersion: info.currentVersion,
+    latestVersion: info.latestVersion,
+    available: true,
+  });
+});
 
 // Rate limiting for authentication attempts
 const AUTH_MAX_ATTEMPTS = 5;
@@ -372,6 +383,17 @@ async function handleClientMessage(
           queuedMessages: getUserQueuedMessages(),
         });
 
+        // Send cached update info if available
+        const updateInfo = getCachedUpdate();
+        if (updateInfo && updateInfo.available) {
+          sendToClient(ws, {
+            type: "update_available",
+            currentVersion: updateInfo.currentVersion,
+            latestVersion: updateInfo.latestVersion,
+            available: true,
+          });
+        }
+
         // Send lightweight agent metadata (no displayMessages — client subscribes when opening detail modal)
         const existingAgents = getAllAgentsInfo();
         for (const agent of existingAgents) {
@@ -575,6 +597,37 @@ async function handleClientMessage(
     case "restart_server": {
       console.log("Restart requested by client");
       await triggerRestart();
+      break;
+    }
+
+    case "check_update": {
+      const info = await checkForUpdate();
+      sendToClient(ws, {
+        type: "update_available",
+        currentVersion: info.currentVersion,
+        latestVersion: info.latestVersion,
+        available: info.available,
+      });
+      break;
+    }
+
+    case "start_upgrade": {
+      console.log("Upgrade requested by client");
+      broadcast({ type: "upgrade_progress", step: "Starting upgrade..." });
+
+      try {
+        await performUpgrade((step) => {
+          broadcast({ type: "upgrade_progress", step });
+        });
+        broadcast({ type: "upgrade_complete" });
+        // Delay restart so the message reaches clients
+        setTimeout(() => triggerRestart(), 2000);
+      } catch (error) {
+        broadcast({
+          type: "upgrade_error",
+          error: error instanceof Error ? error.message : "Upgrade failed",
+        });
+      }
       break;
     }
   }

@@ -72,10 +72,15 @@ export interface ConfigContext {
   config: Ref<Config | null>;
   configSaving: Ref<boolean>;
   mcpStatus: Ref<McpStatusItem[]>;
+  updateAvailable: Ref<boolean>;
+  latestVersion: Ref<string | null>;
+  upgrading: Ref<boolean>;
+  upgradeStep: Ref<string | null>;
   getConfig: () => void;
   updateConfig: (partial: Partial<Config>) => void;
   getMcpStatus: () => void;
   restartServer: () => void;
+  startUpgrade: () => void;
 }
 
 const CONFIG_KEY: InjectionKey<ConfigContext> = Symbol("config");

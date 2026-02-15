@@ -40,7 +40,9 @@ export type ClientMessage =
   | { type: "unsubscribe_agent"; agentId: string }
   | { type: "restart_server" }
   | { type: "stop_generation" }
-  | { type: "kill_agent"; agentId: string };
+  | { type: "kill_agent"; agentId: string }
+  | { type: "check_update" }
+  | { type: "start_upgrade" };
 
 // Server -> Client messages
 export type ServerMessage =
@@ -66,4 +68,8 @@ export type ServerMessage =
   | { type: "agent_detail"; agentId: string; displayMessages: AgentDisplayMessage[] }
   | { type: "compact_start" }
   | { type: "compact_complete" }
+  | { type: "update_available"; currentVersion: string; latestVersion: string; available: boolean }
+  | { type: "upgrade_progress"; step: string }
+  | { type: "upgrade_complete" }
+  | { type: "upgrade_error"; error: string }
   | { type: "ping" };
