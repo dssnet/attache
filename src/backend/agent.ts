@@ -122,10 +122,6 @@ const activeAgents = new Map<string, ActiveAgent>();
 // Cleanup interval: 30 minutes in milliseconds
 const AGENT_INACTIVITY_TIMEOUT = 30 * 60 * 1000;
 
-// Agent creation cooldown: 1 second
-const AGENT_CREATION_COOLDOWN = 1000;
-let lastAgentCreationTime = 0;
-
 // Path to agents storage directory
 const AGENTS_DIR = join(homedir(), ".attache", "agents");
 
@@ -588,14 +584,6 @@ export async function runAgent(
   if (!trimmedTask || trimmedTask.length < 3 || trimmedTask === ":") {
     throw new Error("Task description is too short or invalid");
   }
-
-  const now = Date.now();
-  const timeSinceLastCreation = now - lastAgentCreationTime;
-  if (timeSinceLastCreation < AGENT_CREATION_COOLDOWN) {
-    const remainingTime = AGENT_CREATION_COOLDOWN - timeSinceLastCreation;
-    throw new Error(`Agent creation cooldown active. Please wait ${Math.ceil(remainingTime / 1000)} seconds.`);
-  }
-  lastAgentCreationTime = now;
 
   const providerName = config.models.default;
   const provider = config.models.providers[providerName];

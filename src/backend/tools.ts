@@ -193,7 +193,7 @@ export function createMainTools(config: Config): ToolRegistry {
     start_agent: {
       definition: tool({
         description:
-          "Starts a specialized sub-agent to handle complex tasks that require system access. IMPORTANT: Always call get_active_agents first to avoid creating duplicate agents. Use this for tasks like changing configuration, updating user profile, restarting the server, or any other system-level operations. The agent runs in the background and will automatically callback with its results when done — you do NOT need to poll or check for completion. Returns the agent ID which can be used to send messages to the running agent.",
+          "Starts a specialized sub-agent to handle complex tasks that require system access. IMPORTANT: Always call get_active_agents first to avoid creating duplicate agents. Always CHECK the result — if it returns an error, report it honestly to the user. The agent runs in the background and will automatically callback with its results when done — you do NOT need to poll or check for completion.",
         inputSchema: jsonSchema({
           type: "object",
           properties: {
@@ -213,9 +213,22 @@ export function createMainTools(config: Config): ToolRegistry {
               error: "Missing or invalid required field: task (must be a non-empty string)",
             });
           }
-          runAgent(config, input.task).catch((error) => {
+          const agentPromise = runAgent(config, input.task);
+          // Always attach error handler to prevent unhandled rejection
+          agentPromise.catch((error) => {
             console.error("Agent execution error:", error);
           });
+          // Race: if runAgent rejects immediately (cooldown/validation),
+          // catch it and return the error. Otherwise the timeout wins
+          // and we return success while the agent runs in background.
+          try {
+            await Promise.race([
+              agentPromise,
+              new Promise(resolve => setTimeout(resolve, 50)),
+            ]);
+          } catch (error: any) {
+            return JSON.stringify({ success: false, error: error.message });
+          }
           return JSON.stringify({
             success: true,
             message: "Agent started in background",
