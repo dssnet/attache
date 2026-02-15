@@ -80,6 +80,8 @@ export interface ConfigContext {
   updateConfig: (partial: Partial<Config>) => void;
   getMcpStatus: () => void;
   restartServer: () => void;
+  checkingUpdate: Ref<boolean>;
+  checkUpdate: () => void;
   startUpgrade: () => void;
 }
 

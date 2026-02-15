@@ -83,6 +83,8 @@ const {
   latestVersion,
   upgrading,
   upgradeStep,
+  checkingUpdate,
+  checkUpdate: wsCheckUpdate,
   startUpgrade: wsStartUpgrade,
 } = useWebSocket();
 
@@ -98,6 +100,8 @@ provideConfig({
   updateConfig: wsUpdateConfig,
   getMcpStatus: wsGetMcpStatus,
   restartServer: wsRestartServer,
+  checkingUpdate,
+  checkUpdate: wsCheckUpdate,
   startUpgrade: wsStartUpgrade,
 });
 

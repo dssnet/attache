@@ -117,6 +117,7 @@ export function useWebSocket() {
   const latestVersion = ref<string | null>(null);
   const upgrading = ref(false);
   const upgradeStep = ref<string | null>(null);
+  const checkingUpdate = ref(false);
 
   const toast = useToast();
 
@@ -378,6 +379,7 @@ export function useWebSocket() {
       case "update_available":
         updateAvailable.value = message.available;
         latestVersion.value = message.latestVersion;
+        checkingUpdate.value = false;
         break;
 
       case "upgrade_progress":
@@ -472,6 +474,7 @@ export function useWebSocket() {
   }
 
   function checkUpdate() {
+    checkingUpdate.value = true;
     send({ type: "check_update" });
   }
 
@@ -530,6 +533,7 @@ export function useWebSocket() {
     latestVersion,
     upgrading,
     upgradeStep,
+    checkingUpdate,
     checkUpdate,
     startUpgrade,
     disconnect,
