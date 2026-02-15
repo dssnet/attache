@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
-import { Cpu, Wrench, Palette, User, Plug, Brain } from "lucide-vue-next";
+import { ref, computed, watch } from "vue";
+import { Cpu, Wrench, Palette, User, Plug, Brain, ChevronLeft, X } from "lucide-vue-next";
 import Modal from "../Modal.vue";
 import ModalSidebar from "../components/ModalSidebar.vue";
+import Button from "../../ui/Button.vue";
 import AppearanceSection from "./pages/Appearance.vue";
 import AccountSection from "./pages/Account.vue";
 import ModelSection from "./pages/Model.vue";
@@ -27,6 +28,8 @@ const emit = defineEmits<{
 type Section = "model" | "tools" | "memory" | "mcp" | "appearance" | "account";
 
 const activeSection = ref<Section>("appearance");
+/** Mobile drill-down: true when showing a section's content */
+const mobileOpen = ref(false);
 
 const sections: { id: Section; label: string; icon: any }[] = [
   { id: "appearance", label: "Appearance", icon: Palette },
@@ -37,11 +40,16 @@ const sections: { id: Section; label: string; icon: any }[] = [
   { id: "account", label: "Account", icon: User },
 ];
 
-// Request config when modal opens
+const activeSectionLabel = computed(
+  () => sections.find((s) => s.id === activeSection.value)?.label ?? "Settings",
+);
+
+// Reset mobile drill-down when modal opens
 watch(
   () => props.show,
   (show) => {
     if (show) {
+      mobileOpen.value = false;
       getConfig();
       getMcpStatus();
     }
@@ -50,35 +58,73 @@ watch(
 </script>
 
 <template>
-  <Modal :show="show" title="Settings" no-padding @close="emit('close')">
-    <div class="flex flex-col md:flex-row md:h-[60vh] flex-1 min-h-0">
-      <ModalSidebar
-        :sections="sections"
-        v-model:active-section="activeSection"
-      />
-
-      <!-- Content -->
-      <div class="flex-1 overflow-y-auto">
-        <!-- Config sections use v-show to stay mounted (preserves state) -->
-        <ModelSection v-show="activeSection === 'model'" />
-
-        <ToolsSection v-show="activeSection === 'tools'" />
-
-        <MemorySection v-show="activeSection === 'memory'" />
-
-        <McpServersSection v-show="activeSection === 'mcp'" />
-
-        <!-- Simple sections use v-if (no state to preserve) -->
-        <AppearanceSection
-          v-if="activeSection === 'appearance'"
-          :theme="theme"
-          @set-theme="emit('set-theme', $event)"
+  <Modal
+    :show="show"
+    :title="mobileOpen ? activeSectionLabel : 'Settings'"
+    no-padding
+    @close="emit('close')"
+  >
+    <template v-if="mobileOpen" #header-left-action>
+      <Button
+        variant="ghost"
+        icon
+        size="sm"
+        class="text-2xl leading-none md:hidden"
+        @click="mobileOpen = false"
+      >
+        <ChevronLeft :size="18" />
+      </Button>
+      <Button
+        variant="ghost"
+        icon
+        size="sm"
+        class="text-2xl leading-none hidden md:flex"
+        @click="emit('close')"
+      >
+        <X :size="14" />
+      </Button>
+    </template>
+    <div class="h-full min-h-0 overflow-hidden md:overflow-visible">
+      <div
+        :class="[
+          'flex h-full md:h-[60vh]',
+          'max-md:transition-[translate] max-md:duration-300 max-md:ease-out',
+          mobileOpen ? 'max-md:-translate-x-full' : '',
+        ]"
+      >
+        <ModalSidebar
+          :sections="sections"
+          v-model:active-section="activeSection"
+          v-model:mobile-open="mobileOpen"
         />
 
-        <AccountSection
-          v-if="activeSection === 'account'"
-          @logout="emit('logout')"
-        />
+        <!-- Content panel -->
+        <div
+          class="max-md:w-full max-md:shrink-0 md:flex-1 flex flex-col h-full min-h-0"
+        >
+          <div class="flex-1 overflow-y-auto">
+            <!-- Config sections use v-show to stay mounted (preserves state) -->
+            <ModelSection v-show="activeSection === 'model'" />
+
+            <ToolsSection v-show="activeSection === 'tools'" />
+
+            <MemorySection v-show="activeSection === 'memory'" />
+
+            <McpServersSection v-show="activeSection === 'mcp'" />
+
+            <!-- Simple sections use v-if (no state to preserve) -->
+            <AppearanceSection
+              v-if="activeSection === 'appearance'"
+              :theme="theme"
+              @set-theme="emit('set-theme', $event)"
+            />
+
+            <AccountSection
+              v-if="activeSection === 'account'"
+              @logout="emit('logout')"
+            />
+          </div>
+        </div>
       </div>
     </div>
   </Modal>

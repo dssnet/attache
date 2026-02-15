@@ -13,19 +13,23 @@ const emit = defineEmits<{
 
 <template>
   <div
-    class="p-2 border-b border-border-primary flex justify-between items-center"
+    class="p-2 border-b border-border-primary flex items-center gap-2 relative"
   >
-    <div class="flex items-center gap-3 px-3">
+    <slot name="left-action">
+      <Button
+        variant="ghost"
+        icon
+        size="sm"
+        class="text-2xl leading-none"
+        @click="emit('close')"
+        ><X :size="14"
+      /></Button>
+    </slot>
+    <div class="flex items-center gap-3 flex-1 justify-center">
       <slot name="icon" />
-      <h2 class="text-xl font-semibold text-text-primary">{{ title }}</h2>
+      <h2 class="text-sm font-semibold text-text-primary">{{ title }}</h2>
     </div>
-    <Button
-      variant="ghost"
-      icon
-      size="sm"
-      class="text-2xl leading-none"
-      @click="emit('close')"
-      ><X :size="14"
-    /></Button>
+    <!-- Spacer to balance the left button for centering -->
+    <div class="w-8 h-8 shrink-0" />
   </div>
 </template>

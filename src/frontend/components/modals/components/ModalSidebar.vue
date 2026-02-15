@@ -1,36 +1,42 @@
 <script setup lang="ts">
+import { ChevronRight } from "lucide-vue-next";
+
 defineProps<{
   sections: { id: string; label: string; icon: any }[];
   activeSection: string;
+  /** Mobile drill-down: true when showing a section's content */
+  mobileOpen: boolean;
 }>();
 
 const emit = defineEmits<{
   "update:activeSection": [value: string];
+  "update:mobileOpen": [value: boolean];
 }>();
+
+function selectSection(id: string) {
+  emit("update:activeSection", id);
+  emit("update:mobileOpen", true);
+}
 </script>
 
 <template>
-  <!-- Mobile: horizontal scrollable tabs -->
+  <!-- Mobile: full-screen menu list (always rendered for slide animation) -->
   <nav
-    class="md:hidden shrink-0 border-b border-border-primary bg-bg-primary px-2 pt-1 flex gap-1 overflow-x-auto"
+    class="md:hidden w-full shrink-0 overflow-y-auto p-3 flex flex-col gap-0.5"
   >
     <button
       v-for="section in sections"
       :key="section.id"
-      :class="[
-        'flex items-center gap-1.5 px-3 py-2 rounded-t-lg text-xs font-medium transition-colors whitespace-nowrap',
-        activeSection === section.id
-          ? 'bg-primary text-white'
-          : 'text-text-secondary',
-      ]"
-      @click="emit('update:activeSection', section.id)"
+      class="flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium transition-colors w-full text-left text-text-primary"
+      @click="selectSection(section.id)"
     >
-      <component :is="section.icon" :size="14" />
+      <component :is="section.icon" :size="18" class="text-text-secondary" />
       {{ section.label }}
+      <ChevronRight :size="16" class="ml-auto text-text-muted" />
     </button>
   </nav>
 
-  <!-- Desktop: vertical sidebar -->
+  <!-- Desktop: vertical sidebar (always visible) -->
   <nav
     class="hidden md:flex w-48 shrink-0 border-r border-border-primary bg-bg-primary p-2 flex-col gap-px"
   >

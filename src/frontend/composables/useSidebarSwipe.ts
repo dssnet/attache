@@ -128,7 +128,7 @@ export function useSidebarSwipe(
     sidebar.style.translate = shouldOpen ? "0 0" : "-100% 0";
 
     if (overlayRef.value) {
-      overlayRef.value.style.transition = "opacity 0.3s ease-in-out";
+      overlayRef.value.style.transition = "opacity 0.2s ease-in-out";
       overlayRef.value.style.opacity = shouldOpen ? "1" : "0";
       overlayRef.value.style.pointerEvents = shouldOpen ? "auto" : "none";
     }

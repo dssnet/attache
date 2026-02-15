@@ -100,8 +100,8 @@ export function useModalSwipe(onClose: () => void) {
     const shouldClose =
       velocity > VELOCITY_THRESHOLD || progress >= SWIPE_THRESHOLD;
 
-    // Re-enable transition
-    modal.style.transition = "";
+    // Re-enable transition (explicit, not relying on CSS class)
+    modal.style.transition = "translate 150ms ease-out";
 
     if (shouldClose) {
       modal.style.translate = `0 100%`;
