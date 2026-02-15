@@ -32,6 +32,11 @@ export async function cleanupDownloads() {
 export function createServer() {
   const app = new Hono();
 
+  // Identification endpoint so clients can verify this is an Attaché server
+  app.get("/api/attache", (c) => {
+    return c.json({ attache: true });
+  });
+
   // Serve downloadable files created by the AI
   app.get("/api/downloads/:id/:filename", async (c) => {
     const { id, filename } = c.req.param();
