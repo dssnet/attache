@@ -222,6 +222,13 @@ function fallbackCopy(text: string) {
 }
 
 provideSlashCommands({
+  new: {
+    description: "Clear context and all agents",
+    run: () => {
+      wsClearContext();
+      wsClearAgents();
+    },
+  },
   stop: {
     description: "Stop the current process",
     run: () => wsStopGeneration(),
