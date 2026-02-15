@@ -20,6 +20,7 @@ const highlightedIndex = ref(0);
 const dismissed = ref(false);
 
 const slashCommands = useSlashCommands();
+const isMobile = document.documentElement.classList.contains("is-mobile");
 
 // matches "/" optionally followed by non-space chars, nothing else
 const slashPrefix = computed(() => {
@@ -100,8 +101,11 @@ function handleKeydown(e: KeyboardEvent) {
     }
   }
 
+  // On mobile, Enter inserts a newline (default textarea behavior).
+  // On desktop, Enter submits; Shift+Enter inserts a newline.
   if (
     e.key === "Enter" &&
+    !isMobile &&
     !e.shiftKey &&
     !e.ctrlKey &&
     !e.metaKey &&
@@ -210,7 +214,7 @@ defineExpose({ inputElement });
         <button
           type="submit"
           :disabled="!message.trim()"
-          class="w-10 h-10 rounded-full border-none cursor-pointer flex items-center justify-center transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed bg-button-inverse text-button-inverse-text [&:hover:not(:disabled)]:bg-button-inverse-hover"
+          class="w-10 h-10 rounded-full border-none cursor-pointer flex items-center justify-center transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed bg-button-inverse text-button-inverse-text [html:not(.is-mobile)_&:hover:not(:disabled)]:bg-button-inverse-hover"
         >
           <Send :size="16" />
         </button>

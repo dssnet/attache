@@ -133,7 +133,7 @@ function renderMarkdown(content: string): string {
   >
     <div
       :class="[
-        'rounded-radius whitespace-pre-wrap wrap-break-word leading-relaxed',
+        'rounded-radius whitespace-pre-wrap wrap-break-word leading-relaxed min-w-0 max-w-full',
         role === 'user'
           ? 'bg-primary text-white py-2.5 px-3.5'
           : 'text-text-primary w-full',
@@ -271,11 +271,11 @@ function renderMarkdown(content: string): string {
   transition: opacity 0.15s;
 }
 
-.markdown-content :deep(.code-block-wrapper:hover .code-copy-btn) {
+html:not(.is-mobile) .markdown-content :deep(.code-block-wrapper:hover .code-copy-btn) {
   opacity: 1;
 }
 
-.markdown-content :deep(.code-copy-btn:hover) {
+html:not(.is-mobile) .markdown-content :deep(.code-copy-btn:hover) {
   background: var(--color-bg-hover);
   color: var(--color-text-primary);
 }
@@ -313,7 +313,7 @@ function renderMarkdown(content: string): string {
   opacity: 0.9;
 }
 
-.markdown-content :deep(a:hover) {
+html:not(.is-mobile) .markdown-content :deep(a:hover) {
   opacity: 1;
 }
 

@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* Override Tailwind's built-in hover variant so hover: utilities
+   only apply on non-mobile devices (detected via userAgent). */
+@custom-variant hover (html:not(.is-mobile) &:hover);
+
 /* Theme configuration for Tailwind 4 */
 @theme {
   /* Brand colors */

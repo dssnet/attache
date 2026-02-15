@@ -43,4 +43,10 @@ new MutationObserver((mutations) => {
   attributeFilter: ["data-theme"],
 });
 
+// Detect mobile devices via userAgent and flag <html> so CSS can skip :hover styles.
+// Touch devices trigger sticky hover states that look broken, so we disable them entirely.
+if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+  document.documentElement.classList.add("is-mobile");
+}
+
 createApp(App).mount("#app");

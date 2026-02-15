@@ -5,9 +5,11 @@ import EmptyState from "../common/EmptyState.vue";
 import ChatMessages from "./ChatMessages.vue";
 import InputArea from "./InputArea.vue";
 import Button from "../ui/Button.vue";
+import ConfirmDialog from "../ui/ConfirmDialog.vue";
 import ToastContainer from "../ui/ToastContainer.vue";
 
 const chatMessagesRef = ref<InstanceType<typeof ChatMessages> | null>(null);
+const showClearConfirm = ref(false);
 
 defineProps<{
   sidebarCollapsed: boolean;
@@ -70,7 +72,7 @@ const emit = defineEmits<{
         icon
         size="sm"
         title="Clear chat"
-        @click="emit('clear-context')"
+        @click="showClearConfirm = true"
       >
         <SquarePen :size="18" />
       </Button>
@@ -146,5 +148,15 @@ const emit = defineEmits<{
         @remove-queued="(idx) => emit('remove-queued', idx)"
       />
     </div>
+
+    <ConfirmDialog
+      :show="showClearConfirm"
+      title="Clear Chat"
+      message="Are you sure you want to clear the chat history?"
+      confirm-text="Clear"
+      variant="danger"
+      @confirm="showClearConfirm = false; emit('clear-context')"
+      @cancel="showClearConfirm = false"
+    />
   </div>
 </template>

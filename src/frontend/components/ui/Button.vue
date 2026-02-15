@@ -36,13 +36,13 @@ const sizeClasses = computed(() => {
 const variantClasses = computed(() => {
   const variants = {
     primary:
-      "bg-primary text-white [&:hover:not(:disabled)]:bg-primary-hover [&:active:not(:disabled)]:bg-primary-active",
+      "bg-primary text-white [html:not(.is-mobile)_&:hover:not(:disabled)]:bg-primary-hover [&:active:not(:disabled)]:bg-primary-active",
     secondary:
-      "bg-bg-secondary border border-border-primary text-text-primary [&:hover:not(:disabled)]:bg-bg-hover",
+      "bg-bg-secondary border border-border-primary text-text-primary [html:not(.is-mobile)_&:hover:not(:disabled)]:bg-bg-hover",
     ghost:
-      "bg-transparent text-text-primary [&:hover:not(:disabled)]:bg-bg-hover",
+      "bg-transparent text-text-primary [html:not(.is-mobile)_&:hover:not(:disabled)]:bg-bg-hover",
     danger:
-      "bg-red-500/10 text-red-500 border border-red-500/20 [&:hover:not(:disabled)]:bg-red-500/20",
+      "bg-red-500/10 text-red-500 border border-red-500/20 [html:not(.is-mobile)_&:hover:not(:disabled)]:bg-red-500/20",
   };
   return variants[props.variant ?? "primary"];
 });

@@ -23,10 +23,11 @@ const emit = defineEmits<{
 const selectedAgent = ref<string | null>(null);
 const showSettings = ref(false);
 const toast = useToast();
+const isMobile = window.innerWidth < 768;
 const sidebarCollapsed = ref(
-  localStorage.getItem("sidebarCollapsed") !== null
-    ? localStorage.getItem("sidebarCollapsed") === "true"
-    : window.innerWidth < 768,
+  isMobile
+    ? true
+    : localStorage.getItem("sidebarCollapsed") === "true",
 );
 
 function toggleSidebar() {

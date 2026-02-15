@@ -1,11 +1,14 @@
 <script setup lang="ts">
+import { ref } from "vue";
 import { Settings, LogOut } from "lucide-vue-next";
 import SidebarHeader from "./SidebarHeader.vue";
 import AgentsList from "../agents/AgentsList.vue";
 import Button from "../ui/Button.vue";
+import ConfirmDialog from "../ui/ConfirmDialog.vue";
 import type { AgentDisplayMessage } from "../../composables/useWebSocket";
 
 const isTauri = !!(window as any).__TAURI__;
+const showDisconnectConfirm = ref(false);
 
 function disconnect() {
   (window as any).__TAURI__?.core?.invoke("disconnect");
@@ -69,11 +72,21 @@ const emit = defineEmits<{
         variant="ghost"
         full-width
         class="flex items-center justify-start gap-2"
-        @click="disconnect"
+        @click="showDisconnectConfirm = true"
       >
         <LogOut :size="20" />
         Disconnect
       </Button>
     </div>
+
+    <ConfirmDialog
+      :show="showDisconnectConfirm"
+      title="Disconnect"
+      message="Are you sure you want to disconnect from this server?"
+      confirm-text="Disconnect"
+      variant="danger"
+      @confirm="showDisconnectConfirm = false; disconnect()"
+      @cancel="showDisconnectConfirm = false"
+    />
   </div>
 </template>

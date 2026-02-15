@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import { ref } from "vue";
 import { PanelLeft, ArrowUpCircle } from "lucide-vue-next";
 import Button from "../ui/Button.vue";
+import ConfirmDialog from "../ui/ConfirmDialog.vue";
 import { useConfig } from "../../composables/useConfig";
 
 const { updateAvailable, latestVersion, upgrading, upgradeStep, startUpgrade } =
@@ -12,14 +14,15 @@ const emit = defineEmits<{
   "collapse-sidebar": [];
 }>();
 
+const showUpgradeConfirm = ref(false);
+
 function handleUpgrade() {
-  if (
-    confirm(
-      `Update to v${latestVersion.value}? The server will restart after upgrading.`,
-    )
-  ) {
-    startUpgrade();
-  }
+  showUpgradeConfirm.value = true;
+}
+
+function confirmUpgrade() {
+  showUpgradeConfirm.value = false;
+  startUpgrade();
 }
 </script>
 
@@ -65,4 +68,13 @@ function handleUpgrade() {
       </Button>
     </div>
   </div>
+
+  <ConfirmDialog
+    :show="showUpgradeConfirm"
+    title="Update Available"
+    :message="`Update to v${latestVersion}? The server will restart after upgrading.`"
+    confirm-text="Update"
+    @confirm="confirmUpgrade"
+    @cancel="showUpgradeConfirm = false"
+  />
 </template>
