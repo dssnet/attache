@@ -148,6 +148,10 @@ function handleGlobalKeydown(e: KeyboardEvent) {
   inputElement.value?.focus();
 }
 
+watch(message, () => {
+  nextTick(autoResize);
+});
+
 onMounted(() => {
   document.addEventListener("keydown", handleGlobalKeydown);
 });

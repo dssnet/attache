@@ -1,10 +1,6 @@
 <script setup lang="ts">
-import { Copy, Check, Trash2, PanelLeft } from "lucide-vue-next";
+import { PanelLeft } from "lucide-vue-next";
 import Button from "../ui/Button.vue";
-
-defineProps<{
-  copied: boolean;
-}>();
 
 const emit = defineEmits<{
   copy: [];

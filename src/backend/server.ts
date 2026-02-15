@@ -41,6 +41,7 @@ export function createServer() {
       return c.notFound();
     }
     c.header("Content-Disposition", `attachment; filename="${filename}"`);
+    c.header("Content-Type", file.type || "application/octet-stream");
     return c.body(await file.arrayBuffer());
   });
 

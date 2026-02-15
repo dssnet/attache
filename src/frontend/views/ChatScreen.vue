@@ -4,6 +4,7 @@ import { useWebSocket } from "../composables/useWebSocket";
 import { provideConfig } from "../composables/useConfig";
 import { provideSlashCommands } from "../composables/useSlashCommands";
 import { useSidebarSwipe } from "../composables/useSidebarSwipe";
+import { useToast } from "../composables/useToast";
 import Sidebar from "../components/sidebar/Sidebar.vue";
 import ChatMain from "../components/chat/ChatMain.vue";
 import AgentDetailModal from "../components/modals/AgentDetailModal.vue";
@@ -21,11 +22,11 @@ const emit = defineEmits<{
 
 const selectedAgent = ref<string | null>(null);
 const showSettings = ref(false);
-const copied = ref(false);
+const toast = useToast();
 const sidebarCollapsed = ref(
   localStorage.getItem("sidebarCollapsed") !== null
     ? localStorage.getItem("sidebarCollapsed") === "true"
-    : window.innerWidth < 768
+    : window.innerWidth < 768,
 );
 
 function toggleSidebar() {
@@ -55,7 +56,6 @@ const {
   connected,
   messages,
   agents,
-  error,
   loading,
   compacting,
   queuedMessages,
@@ -123,7 +123,10 @@ const contextPercent = computed(() => {
     (sum, msg) => sum + Math.ceil(msg.content.length / 4),
     0,
   );
-  return Math.min(Math.round((estimatedTokens / provider.maxTokens) * 100), 100);
+  return Math.min(
+    Math.round((estimatedTokens / provider.maxTokens) * 100),
+    100,
+  );
 });
 
 // Get selected agent data
@@ -171,7 +174,9 @@ function copyToClipboard() {
         parts.push(msg.content);
       }
       for (const tc of msgToolCalls) {
-        parts.push(`[Tool: ${tc.toolName}]\nInput: ${JSON.stringify(tc.toolInput, null, 2)}`);
+        parts.push(
+          `[Tool: ${tc.toolName}]\nInput: ${JSON.stringify(tc.toolInput, null, 2)}`,
+        );
       }
 
       if (parts.length === 0) return null;
@@ -186,10 +191,7 @@ function copyToClipboard() {
     navigator.clipboard
       .writeText(chatText)
       .then(() => {
-        copied.value = true;
-        setTimeout(() => {
-          copied.value = false;
-        }, 2000);
+        toast.success("Copied to clipboard");
       })
       .catch((err: unknown) => {
         console.error("Failed to copy chat:", err);
@@ -210,10 +212,7 @@ function fallbackCopy(text: string) {
 
   try {
     document.execCommand("copy");
-    copied.value = true;
-    setTimeout(() => {
-      copied.value = false;
-    }, 2000);
+    toast.success("Copied to clipboard");
   } catch (err) {
     console.error("Fallback copy failed:", err);
   } finally {
@@ -365,15 +364,15 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div
-    class="flex h-full bg-bg-primary text-text-primary overflow-hidden"
-  >
+  <div class="flex h-full bg-bg-primary text-text-primary overflow-hidden">
     <!-- Mobile backdrop -->
     <div
       ref="overlayRef"
       :class="[
         'md:hidden fixed inset-0 z-30 bg-black/30 backdrop-blur-sm transition-opacity duration-200',
-        sidebarCollapsed && !isSwiping ? 'opacity-0 pointer-events-none' : 'opacity-100',
+        sidebarCollapsed && !isSwiping
+          ? 'opacity-0 pointer-events-none'
+          : 'opacity-100',
       ]"
       @click="toggleSidebar"
     />
@@ -382,7 +381,10 @@ onUnmounted(() => {
     <div
       ref="sidebarRef"
       :class="[
-        'shrink-0 overflow-hidden flex shadow-[var(--shadow-sidebar)] border-r border-white/[0.06] md:shadow-none md:border-r-0',
+        'shrink-0 overflow-hidden flex md:shadow-none md:border-r-0',
+        sidebarCollapsed
+          ? ''
+          : 'shadow-(--shadow-sidebar) border-r border-white/6',
         'fixed inset-y-0 left-0 z-40 w-4/5 max-w-80 rounded-r-2xl pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] bg-bg-secondary',
         'md:relative md:inset-auto md:z-auto md:max-w-none md:pt-0 md:pb-0 md:pl-0 md:bg-transparent',
         'transition-transform duration-200 ease-in-out',
@@ -394,7 +396,6 @@ onUnmounted(() => {
     >
       <Sidebar
         :connected="connected"
-        :copied="copied"
         :collapsed="sidebarCollapsed"
         :agents="agentsArray"
         @copy="copyToClipboard"
@@ -408,7 +409,6 @@ onUnmounted(() => {
 
     <ChatMain
       :connected="connected"
-      :error="error"
       :visibleMessages="visibleMessages"
       :loading="loading"
       :compacting="compacting"
@@ -420,7 +420,12 @@ onUnmounted(() => {
       @submit="sendMessage"
       @tool-call-click="openToolCallDetail"
       @agent-message-click="openAgentMessage"
-      @remove-queued="(idx) => { const msg = queuedMessages[idx]; if (msg) wsRemoveQueuedMessage(msg.timestamp); }"
+      @remove-queued="
+        (idx) => {
+          const msg = queuedMessages[idx];
+          if (msg) wsRemoveQueuedMessage(msg.timestamp);
+        }
+      "
       @toggle-sidebar="toggleSidebar"
       @clear-context="clearContext"
     />

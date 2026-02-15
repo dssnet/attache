@@ -56,6 +56,16 @@
   --color-error-bg: #7f1d1d;
   --color-error-text: #fecaca;
 
+  /* Toast / notification colors */
+  --color-toast-error-bg: #7f1d1d;
+  --color-toast-error-text: #fecaca;
+  --color-toast-success-bg: #064e3b;
+  --color-toast-success-text: #6ee7b7;
+  --color-toast-warning-bg: #78350f;
+  --color-toast-warning-text: #fde68a;
+  --color-toast-info-bg: #1e3a5f;
+  --color-toast-info-text: #93c5fd;
+
   /* Tool badge */
   --color-tool-badge-bg: rgba(0, 127, 255, 0.15);
   --color-tool-badge-border: rgba(0, 127, 255, 0.3);
@@ -227,6 +237,16 @@
     /* Error banner */
     --color-error-bg: #fecaca;
     --color-error-text: #7f1d1d;
+
+    /* Toast / notification colors */
+    --color-toast-error-bg: #fecaca;
+    --color-toast-error-text: #7f1d1d;
+    --color-toast-success-bg: #d1fae5;
+    --color-toast-success-text: #047857;
+    --color-toast-warning-bg: #fef3c7;
+    --color-toast-warning-text: #92400e;
+    --color-toast-info-bg: #dbeafe;
+    --color-toast-info-text: #1d4ed8;
 
     /* Tool badge */
     --color-tool-badge-bg: rgba(0, 127, 255, 0.1);

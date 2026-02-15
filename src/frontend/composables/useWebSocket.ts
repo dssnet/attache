@@ -1,5 +1,6 @@
 import { ref, onUnmounted } from "vue";
 import type { Config } from "./useConfig";
+import { useToast } from "./useToast";
 
 interface Message {
   role: "user" | "assistant" | "agent";
@@ -96,7 +97,6 @@ export function useWebSocket() {
   const authenticated = ref(false);
   const messages = ref<Message[]>([]);
   const agents = ref<Map<string, Agent>>(new Map());
-  const error = ref<string | null>(null);
   const loading = ref(false);
   const compacting = ref(false);
   const streamingMessages = new Map<string, string>();
@@ -108,8 +108,11 @@ export function useWebSocket() {
     Array<{ name: string; status: string; toolCount: number; error?: string }>
   >([]);
 
+  const toast = useToast();
+
   let reconnectTimeout: number | null = null;
   let reconnectAttempts = 0;
+  let connectionToastId: number | null = null;
 
   // Heartbeat: if no message arrives within this window, assume the
   // connection is dead (zombie socket behind a proxy) and force reconnect.
@@ -143,7 +146,10 @@ export function useWebSocket() {
       console.log("WebSocket connected");
       connected.value = true;
       reconnectAttempts = 0;
-      error.value = null;
+      if (connectionToastId !== null) {
+        toast.dismiss(connectionToastId);
+        connectionToastId = null;
+      }
       resetHeartbeat();
 
       // Authenticate
@@ -158,7 +164,6 @@ export function useWebSocket() {
 
     ws.value.onerror = (event) => {
       console.error("WebSocket error:", event);
-      error.value = "Connection error";
     };
 
     ws.value.onclose = () => {
@@ -166,6 +171,11 @@ export function useWebSocket() {
       connected.value = false;
       authenticated.value = false;
       clearHeartbeat();
+
+      // Show persistent toast while disconnected
+      if (connectionToastId === null) {
+        connectionToastId = toast.warning("Connection lost. Reconnecting…", 0);
+      }
 
       // Always attempt to reconnect with exponential backoff (capped at 30s)
       reconnectAttempts++;
@@ -184,14 +194,13 @@ export function useWebSocket() {
     switch (message.type) {
       case "auth_success":
         authenticated.value = true;
-        error.value = null;
         // Request initial context and config
         send({ type: "get_context" });
         send({ type: "get_config" });
         break;
 
       case "auth_error":
-        error.value = message.error;
+        toast.error(message.error);
         authenticated.value = false;
         onLogout();
         break;
@@ -245,7 +254,7 @@ export function useWebSocket() {
         break;
 
       case "error":
-        error.value = message.error;
+        toast.error(message.error);
         loading.value = false;
         break;
 
@@ -362,18 +371,17 @@ export function useWebSocket() {
     if (ws.value && ws.value.readyState === WebSocket.OPEN) {
       ws.value.send(JSON.stringify(message));
     } else {
-      error.value = "Not connected";
+      toast.error("Not connected");
     }
   }
 
   function sendMessage(content: string) {
     if (!authenticated.value) {
-      error.value = "Not authenticated";
+      toast.error("Not authenticated");
       return;
     }
 
     loading.value = true;
-    error.value = null;
 
     send({ type: "send_message", content });
   }
@@ -456,7 +464,6 @@ export function useWebSocket() {
     authenticated,
     messages,
     agents,
-    error,
     loading,
     compacting,
     queuedMessages,

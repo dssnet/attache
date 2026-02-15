@@ -13,7 +13,6 @@ function disconnect() {
 
 defineProps<{
   connected: boolean;
-  copied: boolean;
   collapsed: boolean;
   agents: Array<{
     id: string;
@@ -42,7 +41,6 @@ const emit = defineEmits<{
     ]"
   >
     <SidebarHeader
-      :copied="copied"
       @copy="emit('copy')"
       @clear-context="emit('clear-context')"
       @collapse-sidebar="emit('collapse-sidebar')"

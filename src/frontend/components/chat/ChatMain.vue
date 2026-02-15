@@ -1,17 +1,17 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import { PanelLeft, CircleAlert, Menu, SquarePen, ArrowDown } from "lucide-vue-next";
+import { PanelLeft, Menu, SquarePen, ArrowDown } from "lucide-vue-next";
 import EmptyState from "../common/EmptyState.vue";
 import ChatMessages from "./ChatMessages.vue";
 import InputArea from "./InputArea.vue";
 import Button from "../ui/Button.vue";
+import ToastContainer from "../ui/ToastContainer.vue";
 
 const chatMessagesRef = ref<InstanceType<typeof ChatMessages> | null>(null);
 
 defineProps<{
   sidebarCollapsed: boolean;
   connected: boolean;
-  error: string | null;
   visibleMessages: Array<{
     role: "user" | "assistant" | "agent";
     content: string;
@@ -101,13 +101,7 @@ const emit = defineEmits<{
       </Transition>
     </div>
 
-    <div
-      v-if="error"
-      class="bg-error-bg/90 backdrop-blur-sm text-error-text px-4 py-2.5 text-sm mx-4 mt-4 rounded-radius border border-error-text/20 flex items-center gap-2.5 shadow-lg md:absolute md:left-0 md:right-0 md:top-0 md:z-10"
-    >
-      <CircleAlert :size="16" class="shrink-0 opacity-80" />
-      <span>{{ error }}</span>
-    </div>
+    <ToastContainer />
 
     <!-- Empty State -->
     <EmptyState

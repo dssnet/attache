@@ -4,6 +4,7 @@ import {
   copyIcon,
   checkIcon,
 } from "../../composables/useMarkdown";
+import { useToast } from "../../composables/useToast";
 
 defineProps<{
   role: "user" | "assistant";
@@ -11,17 +12,73 @@ defineProps<{
 }>();
 
 const md = useMarkdown();
+const toast = useToast();
 
 function onContentClick(e: MouseEvent) {
   const btn = (e.target as HTMLElement).closest(".code-copy-btn");
-  if (!btn) return;
-  const pre = btn.closest(".code-block-wrapper")?.querySelector("pre");
-  if (!pre) return;
-  navigator.clipboard.writeText(pre.textContent || "");
-  btn.innerHTML = checkIcon;
-  setTimeout(() => {
-    btn.innerHTML = copyIcon;
-  }, 1500);
+  if (btn) {
+    const pre = btn.closest(".code-block-wrapper")?.querySelector("pre");
+    if (!pre) return;
+    navigator.clipboard.writeText(pre.textContent || "");
+    btn.innerHTML = checkIcon;
+    setTimeout(() => {
+      btn.innerHTML = copyIcon;
+    }, 1500);
+    return;
+  }
+
+  // Handle download links in Tauri/mobile webviews via fetch + blob
+  const anchor = (e.target as HTMLElement).closest("a") as HTMLAnchorElement | null;
+  if (!anchor) return;
+  const href = anchor.getAttribute("href");
+  if (!href || !href.includes("/api/downloads/")) return;
+  e.preventDefault();
+  if (anchor.classList.contains("downloading")) return;
+
+  anchor.classList.add("downloading");
+
+  const url = new URL(href, window.location.origin);
+  const fileName = decodeURIComponent(url.pathname.split("/").pop() || "download");
+  fetch(url.toString())
+    .then((res) => {
+      if (res.status === 404) throw new Error("expired");
+      if (!res.ok) throw new Error("Download failed");
+      return res.blob();
+    })
+    .then(async (blob) => {
+      const file = new File([blob], fileName, { type: blob.type || "application/octet-stream" });
+
+      // Mobile webviews ignore <a download>; use the Web Share API instead
+      // which opens the native share sheet (Save to Files on iOS, etc.)
+      // Only use share on mobile — desktop browsers handle <a download> fine.
+      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      if (isMobile && navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file] });
+      } else {
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = blobUrl;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(blobUrl);
+      }
+
+      anchor.classList.remove("downloading");
+      toast.success(`Downloaded ${fileName}`);
+    })
+    .catch((err) => {
+      anchor.classList.remove("downloading");
+      // User dismissed the share sheet — not an error
+      if (err instanceof DOMException && err.name === "AbortError") return;
+      if (err instanceof Error && err.message === "expired") {
+        toast.error("Download expired — ask the assistant to create it again");
+      } else {
+        toast.error("Download failed");
+        window.open(url.toString(), "_blank");
+      }
+    });
 }
 
 /**
@@ -259,6 +316,12 @@ function renderMarkdown(content: string): string {
 .markdown-content :deep(a:hover) {
   opacity: 1;
 }
+
+.markdown-content :deep(a.downloading) {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
 
 .markdown-content :deep(hr) {
   border: none;
