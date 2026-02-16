@@ -1,42 +1,69 @@
+<script setup lang="ts">
+import { ref, onMounted, onUnmounted } from "vue";
+import spinners from "unicode-animations";
+
+const messages = [
+  "Thinking...",
+  "Pondering...",
+  "Brewing thoughts...",
+  "Conjuring a response...",
+  "Crunching neurons...",
+  "Consulting the oracle...",
+  "Weaving words...",
+  "Assembling pixels...",
+  "Summoning knowledge...",
+  "Processing...",
+  "Contemplating...",
+  "Formulating...",
+  "Decoding the universe...",
+  "Warming up synapses...",
+  "Channeling wisdom...",
+  "Spinning up ideas...",
+  "Calibrating thoughts...",
+  "Mining for answers...",
+  "Composing a reply...",
+  "Dusting off the archives...",
+];
+
+const spinnerNames = Object.keys(spinners) as (keyof typeof spinners)[];
+const chosen = spinnerNames[Math.floor(Math.random() * spinnerNames.length)]!;
+const { frames, interval } = spinners[chosen];
+const message = messages[Math.floor(Math.random() * messages.length)];
+
+const frame = ref(0);
+let timer: ReturnType<typeof setInterval>;
+
+onMounted(() => {
+  timer = setInterval(() => {
+    frame.value = (frame.value + 1) % frames.length;
+  }, interval);
+});
+
+onUnmounted(() => {
+  clearInterval(timer);
+});
+</script>
+
 <template>
-  <div class="flex justify-start py-2 px-6">
-    <div class="flex items-center gap-3">
-      <div class="flex items-center gap-1 h-6">
-        <span class="loading-bar w-1 h-2 bg-primary rounded-sm"></span>
-        <span class="loading-bar w-1 h-4 bg-primary rounded-sm"></span>
-        <span class="loading-bar w-1 h-5 bg-primary rounded-sm"></span>
-        <span class="loading-bar w-1 h-3 bg-primary rounded-sm"></span>
-      </div>
+  <div class="flex justify-start py-2 px-3">
+    <div class="flex items-center gap-2">
+      <span class="braille-spinner text-primary text-base leading-6">{{ frames[frame] }}</span>
+      <span class="text-xs text-text-secondary">{{ message }}</span>
     </div>
   </div>
 </template>
 
 <style scoped>
-.loading-bar {
-  animation: bar-wave 1.2s ease-in-out infinite;
+@font-face {
+  font-family: "Braille";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/noto-sans-symbols-2-braille.woff2") format("woff2");
+  unicode-range: U+2800-28FF;
 }
 
-.loading-bar:nth-child(1) {
-  animation-delay: 0s;
-}
-.loading-bar:nth-child(2) {
-  animation-delay: 0.1s;
-}
-.loading-bar:nth-child(3) {
-  animation-delay: 0.2s;
-}
-.loading-bar:nth-child(4) {
-  animation-delay: 0.3s;
-}
-
-@keyframes bar-wave {
-  0%, 100% {
-    transform: scaleY(1);
-    opacity: 0.6;
-  }
-  50% {
-    transform: scaleY(1.5);
-    opacity: 1;
-  }
+.braille-spinner {
+  font-family: "Braille", monospace;
 }
 </style>

@@ -44,6 +44,7 @@
     "qrcode": "^1.5.4",
     "shiki": "^3.22.0",
     "tailwindcss": "^4.1.18",
+    "unicode-animations": "^1.0.3",
     "vue": "^3.5.27"
   }
 }
