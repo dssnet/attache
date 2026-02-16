@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import { LogOut, RefreshCw, ArrowUpCircle } from "lucide-vue-next";
+import { LogOut, RefreshCw, ArrowUpCircle, QrCode } from "lucide-vue-next";
+import QRCode from "qrcode";
 import Button from "../../../ui/Button.vue";
 import ConfirmDialog from "../../../ui/ConfirmDialog.vue";
 import Container from "../../components/Container.vue";
@@ -26,6 +27,27 @@ const emit = defineEmits<{
 }>();
 
 const showUpgradeConfirm = ref(false);
+const qrDataUrl = ref<string | null>(null);
+const showQr = ref(false);
+
+async function toggleQrCode() {
+  if (showQr.value) {
+    showQr.value = false;
+    return;
+  }
+  if (!qrDataUrl.value) {
+    const payload = JSON.stringify({
+      url: window.location.origin + "/",
+      token: localStorage.getItem("authToken") ?? "",
+    });
+    qrDataUrl.value = await QRCode.toDataURL(payload, {
+      width: 256,
+      margin: 2,
+      color: { dark: "#000000", light: "#ffffff" },
+    });
+  }
+  showQr.value = true;
+}
 
 function handleCheckUpdate() {
   checkUpdate();
@@ -86,6 +108,31 @@ function confirmUpgrade() {
         </Button>
       </div>
     </Setting>
+
+    <Setting
+      name="QR Code"
+      description="Scan to log in on another device"
+    >
+      <Button
+        variant="secondary"
+        size="sm"
+        class="flex items-center justify-center gap-2"
+        @click="toggleQrCode"
+      >
+        <QrCode :size="16" />
+        {{ showQr ? "Hide" : "Show" }} QR Code
+      </Button>
+    </Setting>
+    <div
+      v-if="showQr && qrDataUrl"
+      class="flex justify-center py-4"
+    >
+      <img
+        :src="qrDataUrl"
+        alt="Login QR Code"
+        class="w-48 h-48 rounded-lg"
+      />
+    </div>
 
     <Setting
       name="Sign Out"
