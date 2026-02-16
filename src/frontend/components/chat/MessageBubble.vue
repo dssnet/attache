@@ -39,6 +39,37 @@ function onContentClick(e: MouseEvent) {
 
   const url = new URL(href, window.location.origin);
   const fileName = decodeURIComponent(url.pathname.split("/").pop() || "download");
+
+  // Android + Tauri: validate first, then trigger native download via
+  // DownloadListener which uses Android's DownloadManager to save to
+  // the public Downloads folder.
+  const isTauri = !!(window as any).__TAURI__;
+  const isAndroid = /Android/i.test(navigator.userAgent);
+  if (isAndroid && isTauri) {
+    fetch(url.toString(), { method: "HEAD" })
+      .then((res) => {
+        anchor.classList.remove("downloading");
+        if (res.status === 404) {
+          toast.error("Download expired — ask the assistant to create it again");
+          return;
+        }
+        if (!res.ok) {
+          toast.error("Download failed");
+          return;
+        }
+        // Navigate to the download URL — the native DownloadListener
+        // intercepts Content-Disposition: attachment and saves the file
+        // via DownloadManager. The WebView stays on the current page.
+        window.location.assign(url.toString());
+        toast.success(`Downloaded ${fileName}`);
+      })
+      .catch(() => {
+        anchor.classList.remove("downloading");
+        toast.error("Download failed");
+      });
+    return;
+  }
+
   fetch(url.toString())
     .then((res) => {
       if (res.status === 404) throw new Error("expired");
@@ -48,13 +79,11 @@ function onContentClick(e: MouseEvent) {
     .then(async (blob) => {
       const file = new File([blob], fileName, { type: blob.type || "application/octet-stream" });
 
-      // Mobile webviews ignore <a download>; use the Web Share API instead
-      // which opens the native share sheet (Save to Files on iOS, etc.)
+      // iOS webviews ignore <a download>; use the Web Share API instead
+      // which opens the native share sheet (Save to Files, etc.)
       // Only use share on mobile — desktop browsers handle <a download> fine.
-      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      const isMobile = /iPhone|iPad|iPod/i.test(navigator.userAgent);
       if (isMobile) {
-        // Try Web Share API directly — skip canShare() which Android WebView
-        // may not support even when navigator.share works fine with files.
         let shared = false;
         if (navigator.share) {
           try {
@@ -63,12 +92,9 @@ function onContentClick(e: MouseEvent) {
           } catch (e) {
             // User dismissed the share sheet — re-throw so the outer catch handles it
             if (e instanceof DOMException && e.name === "AbortError") throw e;
-            // Share not supported for files — fall through to URL fallback
           }
         }
         if (!shared) {
-          // Last resort: open the server URL directly. The server sends
-          // Content-Disposition: attachment so the browser will download it.
           window.open(url.toString(), "_blank");
         }
       } else {
