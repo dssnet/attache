@@ -88,6 +88,7 @@
   --animate-bar-wave: bar-wave 1.2s ease-in-out infinite;
 
   --radius-radius: 1rem;
+  --radius-device: 2.75rem;
 }
 
 @keyframes pulse-fast {

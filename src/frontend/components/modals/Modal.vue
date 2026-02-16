@@ -38,7 +38,7 @@ const { modalRef } = useModalSwipe(() => emit("close"));
         <div
           v-if="show"
           ref="modalRef"
-          class="modal-content overflow-hidden bg-bg-secondary border border-border-primary flex flex-col shadow-[0_20px_25px_-5px_rgba(0,0,0,0.5)] w-full h-[calc(100dvh-env(safe-area-inset-top))] rounded-t-2xl md:rounded-2xl md:h-auto md:w-[90%] md:max-w-200 md:max-h-[80vh]"
+          class="modal-content overflow-hidden bg-bg-secondary border border-border-primary flex flex-col shadow-[0_20px_25px_-5px_rgba(0,0,0,0.5)] w-full h-[calc(100dvh-env(safe-area-inset-top))] rounded-t-device md:rounded-2xl md:h-auto md:w-[90%] md:max-w-200 md:max-h-[80vh]"
           @click.stop
         >
           <ModalHeader :title="title" @close="emit('close')">

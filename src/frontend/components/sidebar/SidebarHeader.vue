@@ -27,7 +27,7 @@ function confirmUpgrade() {
 </script>
 
 <template>
-  <div class="p-3 flex items-center justify-between">
+  <div class="p-3 pr-5 md:pr-3 flex items-center justify-between">
     <div class="flex items-center gap-2">
       <img
         src="/logo.svg"

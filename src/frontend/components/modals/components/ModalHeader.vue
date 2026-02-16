@@ -13,7 +13,7 @@ const emit = defineEmits<{
 
 <template>
   <div
-    class="p-2 border-b border-border-primary flex items-center gap-2 relative"
+    class="pt-4 pb-2 px-5 md:p-2 border-b border-border-primary flex items-center gap-2 relative"
   >
     <slot name="left-action">
       <Button
