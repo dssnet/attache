@@ -160,7 +160,7 @@ defineExpose({ messagesContainer, pinnedToBottom, scrollToBottom });
 <template>
   <div
     ref="messagesContainer"
-    class="flex flex-1 overflow-y-scroll w-full flex-col relative px-4 pr-[max(1rem,env(safe-area-inset-right))] py-2"
+    class="flex flex-1 overflow-y-scroll w-full flex-col relative px-4 pr-[max(1rem,env(safe-area-inset-right))] pt-2 pb-8"
   >
     <div class="max-w-200 mx-auto w-full gap-2 flex flex-col in-[.is-mobile]:min-h-[calc(100%+1px)]">
       <template v-for="(msg, msgIndex) in visibleMessages" :key="msgIndex">

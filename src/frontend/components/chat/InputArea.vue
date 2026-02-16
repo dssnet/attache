@@ -28,7 +28,9 @@ defineExpose({ inputElement: () => inputComponent.value?.inputElement });
 </script>
 
 <template>
-  <div class="input-area pt-2 pb-3 px-4 pr-[max(1rem,env(safe-area-inset-right))] z-10">
+  <div class="relative z-10">
+    <div class="pointer-events-none absolute bottom-full left-0 right-0 h-12 bg-gradient-to-t from-bg-primary to-transparent" />
+    <div class="pt-2 pb-3 px-4 pr-[max(1rem,env(safe-area-inset-right))] bg-bg-primary/80 backdrop-blur-xl">
     <QueueIndicator
       :queuedMessages="queuedMessages"
       @remove="(idx) => emit('remove-queued', idx)"
@@ -40,6 +42,7 @@ defineExpose({ inputElement: () => inputComponent.value?.inputElement });
         :contextPercent="contextPercent"
         @submit="handleSubmit"
       />
+    </div>
     </div>
   </div>
 </template>
