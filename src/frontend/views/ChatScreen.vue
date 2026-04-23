@@ -11,6 +11,7 @@ import AgentDetailModal from "../components/modals/AgentDetailModal.vue";
 import AgentMessageDetailModal from "../components/modals/AgentMessageDetailModal.vue";
 import SettingsModal from "../components/modals/settings/SettingsModal.vue";
 import ToolCallDetailModal from "../components/modals/ToolCallDetailModal.vue";
+import ConfirmDialog from "../components/ui/ConfirmDialog.vue";
 
 const props = defineProps<{
   authToken: string;
@@ -22,6 +23,7 @@ const emit = defineEmits<{
 
 const selectedAgent = ref<string | null>(null);
 const showSettings = ref(false);
+const showClearAgentsConfirm = ref(false);
 const toast = useToast();
 const isMobile = window.innerWidth < 768;
 const sidebarCollapsed = ref(
@@ -159,9 +161,11 @@ function clearContext() {
 }
 
 function clearAgents() {
-  if (!confirm("Are you sure you want to remove all agents?")) {
-    return;
-  }
+  showClearAgentsConfirm.value = true;
+}
+
+function confirmClearAgents() {
+  showClearAgentsConfirm.value = false;
   wsClearAgents();
 }
 
@@ -301,6 +305,10 @@ function handleKeydown(event: KeyboardEvent) {
     }
     if (showSettings.value) {
       showSettings.value = false;
+      return;
+    }
+    if (showClearAgentsConfirm.value) {
+      showClearAgentsConfirm.value = false;
       return;
     }
   }
@@ -468,6 +476,16 @@ onUnmounted(() => {
     <AgentMessageDetailModal
       :content="selectedAgentMessage"
       @close="closeAgentMessage"
+    />
+
+    <ConfirmDialog
+      :show="showClearAgentsConfirm"
+      title="Clear Agents"
+      message="Are you sure you want to remove all agents?"
+      confirm-text="Clear"
+      variant="danger"
+      @confirm="confirmClearAgents"
+      @cancel="showClearAgentsConfirm = false"
     />
   </div>
 </template>
