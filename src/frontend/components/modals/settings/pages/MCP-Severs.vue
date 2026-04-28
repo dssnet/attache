@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, watch, computed } from "vue";
-import { Eye, EyeOff, Plus, Trash2, Check, Save, RotateCw } from "lucide-vue-next";
+import { ref, watch, computed, nextTick } from "vue";
+import { Eye, EyeOff, Plus, Trash2, Check, Save, RefreshCw, Pencil } from "lucide-vue-next";
 import Button from "../../../ui/Button.vue";
 import Input from "../../../ui/Input.vue";
 import Dropdown from "../../../ui/Dropdown.vue";
@@ -29,13 +29,16 @@ interface McpServerForm {
   oauthScopes: string;
 }
 
-const { config, configSaving, updateConfig, mcpStatus, restartServer } = useConfig();
+const { config, configSaving, updateConfig, mcpStatus, mcpReloading, reloadMcp } =
+  useConfig();
 
 const mcpServers = ref<Record<string, McpServerForm>>({});
 const selectedMcpServer = ref<string | null>(null);
 const addingMcpServer = ref(false);
 const newMcpServerName = ref("");
 const showOAuthSecret = ref(false);
+const editingMcpServer = ref<string | null>(null);
+const editMcpServerName = ref("");
 
 const mcpServerNames = computed(() => Object.keys(mcpServers.value));
 
@@ -206,6 +209,41 @@ function addMcpServer() {
   newMcpServerName.value = "";
 }
 
+function startEditMcpServer(name: string) {
+  editingMcpServer.value = name;
+  editMcpServerName.value = name;
+  nextTick(() => {
+    const input = document.querySelector<HTMLInputElement>(".mcp-edit-input");
+    input?.focus();
+    input?.select();
+  });
+}
+
+function renameMcpServer() {
+  const oldName = editingMcpServer.value;
+  if (!oldName) return;
+
+  const newName = editMcpServerName.value.trim().toLowerCase().replace(/\s+/g, "-");
+  editingMcpServer.value = null;
+
+  if (!newName || newName === oldName || mcpServers.value[newName]) return;
+
+  const data = mcpServers.value[oldName]!;
+  const entries = Object.entries(mcpServers.value)
+    .filter(([k]) => k !== oldName)
+    .concat([[newName, data]]);
+  mcpServers.value = Object.fromEntries(entries);
+
+  if (selectedMcpServer.value === oldName) {
+    selectedMcpServer.value = newName;
+  }
+
+  if (!config.value) return;
+  const built = buildConfig();
+  (built.mcpServers as any)[oldName] = null;
+  updateConfig({ ...config.value, ...built });
+}
+
 function removeMcpServer(name: string) {
   const { [name]: _, ...rest } = mcpServers.value;
   mcpServers.value = rest;
@@ -221,24 +259,44 @@ function save() {
     ...buildConfig(),
   });
 }
-
-function saveAndRestart() {
-  save();
-  setTimeout(() => restartServer(), 500);
-}
 </script>
 
 <template>
   <div>
     <!-- Server List -->
     <Container>
-      <Header>MCP Servers</Header>
+      <div class="flex items-center justify-between">
+        <Header>MCP Servers</Header>
+        <button
+          class="flex items-center gap-1.5 text-xs text-text-secondary hover:text-text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          :disabled="mcpReloading"
+          @click="reloadMcp"
+        >
+          <RefreshCw
+            :size="13"
+            :class="mcpReloading ? 'animate-spin' : ''"
+          />
+          {{ mcpReloading ? "Reloading..." : "Reload" }}
+        </button>
+      </div>
 
       <ListSelect
         v-if="mcpServerNames.length > 0"
         v-model="selectedMcpServer"
         :items="mcpServerNames"
       >
+        <template #label="{ item }">
+          <input
+            v-if="editingMcpServer === item"
+            v-model="editMcpServerName"
+            class="mcp-edit-input font-medium bg-bg-input text-text-primary rounded px-1.5 py-0.5 text-sm border border-border-primary focus:border-primary focus:outline-none w-32"
+            @click.stop
+            @keydown.enter="renameMcpServer"
+            @keydown.escape="editingMcpServer = null"
+            @blur="renameMcpServer"
+          />
+          <span v-else class="font-medium">{{ item }}</span>
+        </template>
         <template #badge="{ item }">
           <span
             :class="[
@@ -260,12 +318,20 @@ function saveAndRestart() {
           </span>
         </template>
         <template #action="{ item }">
-          <button
-            class="p-1 rounded text-text-secondary hover:text-red-500 hover:bg-red-500/10 transition-colors"
-            @click.stop="removeMcpServer(item)"
-          >
-            <Trash2 :size="14" />
-          </button>
+          <div class="flex items-center gap-0.5">
+            <button
+              class="p-1 rounded text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-colors"
+              @click.stop="startEditMcpServer(item)"
+            >
+              <Pencil :size="14" />
+            </button>
+            <button
+              class="p-1 rounded text-text-secondary hover:text-red-500 hover:bg-red-500/10 transition-colors"
+              @click.stop="removeMcpServer(item)"
+            >
+              <Trash2 :size="14" />
+            </button>
+          </div>
         </template>
       </ListSelect>
 
@@ -468,28 +534,16 @@ function saveAndRestart() {
         >You have unsaved changes</span
       >
       <span v-else></span>
-      <div class="flex items-center gap-2">
-        <Button
-          variant="primary"
-          :disabled="!hasChanges"
-          :loading="configSaving"
-          class="flex items-center gap-2"
-          @click="save"
-        >
-          <Save :size="16" />
-          Save
-        </Button>
-        <Button
-          variant="ghost"
-          :disabled="!hasChanges"
-          :loading="configSaving"
-          class="flex items-center gap-2"
-          @click="saveAndRestart"
-        >
-          <RotateCw :size="16" />
-          Save & Restart
-        </Button>
-      </div>
+      <Button
+        variant="primary"
+        :disabled="!hasChanges"
+        :loading="configSaving"
+        class="flex items-center gap-2"
+        @click="save"
+      >
+        <Save :size="16" />
+        Save
+      </Button>
     </ModalFooter>
   </div>
 </template>

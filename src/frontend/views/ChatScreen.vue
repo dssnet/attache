@@ -66,6 +66,7 @@ const {
   config,
   configSaving,
   mcpStatus,
+  mcpReloading,
   connect,
   sendMessage: wsSendMessage,
   clearContext: wsClearContext,
@@ -75,6 +76,7 @@ const {
   getConfig: wsGetConfig,
   updateConfig: wsUpdateConfig,
   getMcpStatus: wsGetMcpStatus,
+  reloadMcp: wsReloadMcp,
   removeQueuedMessage: wsRemoveQueuedMessage,
   compactContext: wsCompactContext,
   subscribeAgent: wsSubscribeAgent,
@@ -94,6 +96,7 @@ provideConfig({
   config,
   configSaving,
   mcpStatus,
+  mcpReloading,
   updateAvailable,
   latestVersion,
   upgrading,
@@ -101,6 +104,7 @@ provideConfig({
   getConfig: wsGetConfig,
   updateConfig: wsUpdateConfig,
   getMcpStatus: wsGetMcpStatus,
+  reloadMcp: wsReloadMcp,
   restartServer: wsRestartServer,
   checkingUpdate,
   checkUpdate: wsCheckUpdate,
@@ -451,6 +455,7 @@ onUnmounted(() => {
       "
       @toggle-sidebar="toggleSidebar"
       @clear-context="clearContext"
+      @stop="wsStopGeneration"
     />
 
     <AgentDetailModal

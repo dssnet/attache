@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, computed } from "vue";
-import { Save, RotateCw } from "lucide-vue-next";
+import { Save } from "lucide-vue-next";
 import Button from "../../../ui/Button.vue";
 import Input from "../../../ui/Input.vue";
 import Switch from "../../../ui/Switch.vue";
@@ -12,7 +12,7 @@ import Header from "../../components/Header.vue";
 import Label from "../../../ui/Label.vue";
 import ModalFooter from "../../components/ModalFooter.vue";
 
-const { config, configSaving, updateConfig, restartServer } = useConfig();
+const { config, configSaving, updateConfig } = useConfig();
 
 const braveKey = ref("");
 const filesystem = ref(true);
@@ -69,11 +69,6 @@ function save() {
     ...config.value,
     ...buildConfig(),
   });
-}
-
-function saveAndRestart() {
-  save();
-  setTimeout(() => restartServer(), 500);
 }
 </script>
 
@@ -133,28 +128,16 @@ function saveAndRestart() {
         >You have unsaved changes</span
       >
       <span v-else></span>
-      <div class="flex items-center gap-2">
-        <Button
-          variant="primary"
-          :disabled="!hasChanges"
-          :loading="configSaving"
-          class="flex items-center gap-2"
-          @click="save"
-        >
-          <Save :size="16" />
-          Save
-        </Button>
-        <Button
-          variant="ghost"
-          :disabled="!hasChanges"
-          :loading="configSaving"
-          class="flex items-center gap-2"
-          @click="saveAndRestart"
-        >
-          <RotateCw :size="16" />
-          Save & Restart
-        </Button>
-      </div>
+      <Button
+        variant="primary"
+        :disabled="!hasChanges"
+        :loading="configSaving"
+        class="flex items-center gap-2"
+        @click="save"
+      >
+        <Save :size="16" />
+        Save
+      </Button>
     </ModalFooter>
   </Container>
 </template>

@@ -130,7 +130,7 @@ watch(
         </h3>
         <div
           ref="agentLogContainer"
-          class="bg-bg-input border border-border-primary rounded-lg p-4 max-h-[500px] overflow-y-auto"
+          class="bg-bg-input border border-border-primary rounded-lg p-4 max-h-125 overflow-y-auto"
         >
           <div
             v-for="(msg, idx) in agent.displayMessages"
@@ -150,13 +150,19 @@ watch(
             </div>
 
             <!-- Tool call: left-aligned block with input + output -->
-            <div v-else-if="msg.type === 'tool_call'" class="flex justify-start">
+            <div
+              v-else-if="msg.type === 'tool_call'"
+              class="flex justify-start"
+            >
               <div
                 class="bg-bg-card border border-border-primary rounded-lg py-2 px-3 max-w-[85%] text-sm"
               >
                 <div class="flex items-center gap-1.5 text-text-secondary">
                   <span class="text-xs">&#128295;</span>
-                  <span class="font-mono font-semibold text-text-primary text-xs">{{ msg.toolName }}</span>
+                  <span
+                    class="font-mono font-semibold text-text-primary text-xs"
+                    >{{ msg.toolName }}</span
+                  >
                 </div>
                 <details
                   v-if="msg.toolInput && Object.keys(msg.toolInput).length > 0"
@@ -169,7 +175,8 @@ watch(
                   </summary>
                   <pre
                     class="mt-1 p-2 bg-bg-input rounded text-[11px] max-h-40 overflow-auto whitespace-pre-wrap text-text-secondary"
-                  >{{ formatToolInput(msg.toolInput) }}</pre>
+                    >{{ formatToolInput(msg.toolInput) }}</pre
+                  >
                 </details>
                 <details
                   v-if="msg.toolOutput"
@@ -183,7 +190,8 @@ watch(
                   </summary>
                   <pre
                     class="mt-1 p-2 bg-bg-input rounded text-[11px] max-h-60 overflow-auto whitespace-pre-wrap text-text-secondary"
-                  >{{ msg.toolOutput }}</pre>
+                    >{{ msg.toolOutput }}</pre
+                  >
                 </details>
               </div>
             </div>

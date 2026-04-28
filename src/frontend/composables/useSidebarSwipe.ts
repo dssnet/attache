@@ -26,6 +26,7 @@ export function useSidebarSwipe(
     if (window.innerWidth >= 768 || cleaning) return;
 
     const touch = e.touches[0];
+    if (!touch) return;
     startX = touch.clientX;
     startY = touch.clientY;
     startTime = Date.now();
@@ -44,6 +45,7 @@ export function useSidebarSwipe(
     if (!swipeActive || window.innerWidth >= 768) return;
 
     const touch = e.touches[0];
+    if (!touch) return;
     const dx = touch.clientX - startX;
     const dy = touch.clientY - startY;
 

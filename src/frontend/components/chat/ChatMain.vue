@@ -46,6 +46,7 @@ const emit = defineEmits<{
   "remove-queued": [index: number];
   "toggle-sidebar": [];
   "clear-context": [];
+  stop: [];
 }>();
 </script>
 
@@ -135,7 +136,7 @@ const emit = defineEmits<{
           icon
           size="sm"
           variant="secondary"
-          class="absolute bottom-24 left-1/2 -translate-x-1/2 shadow-md rounded-full! z-10"
+          class="absolute bottom-24 left-1/2 -translate-x-1/2 shadow-md rounded-full! z-20"
           @click="chatMessagesRef?.scrollToBottom()"
         >
           <ArrowDown :size="16" />
@@ -144,8 +145,11 @@ const emit = defineEmits<{
       <InputArea
         :queuedMessages="queuedMessages"
         :contextPercent="contextPercent"
+        :pinnedToBottom="chatMessagesRef?.pinnedToBottom ?? true"
+        :isGenerating="loading"
         @submit="(msg) => emit('submit', msg)"
         @remove-queued="(idx) => emit('remove-queued', idx)"
+        @stop="emit('stop')"
       />
     </div>
 

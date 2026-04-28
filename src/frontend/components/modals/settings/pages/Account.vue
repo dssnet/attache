@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import { LogOut, RefreshCw, ArrowUpCircle, QrCode } from "lucide-vue-next";
+import { LogOut, RefreshCw, ArrowUpCircle, QrCode, RotateCw } from "lucide-vue-next";
 import QRCode from "qrcode";
 import Button from "../../../ui/Button.vue";
 import ConfirmDialog from "../../../ui/ConfirmDialog.vue";
@@ -20,6 +20,7 @@ const {
   upgrading,
   upgradeStep,
   startUpgrade,
+  restartServer,
 } = useConfig();
 
 const emit = defineEmits<{
@@ -27,6 +28,7 @@ const emit = defineEmits<{
 }>();
 
 const showUpgradeConfirm = ref(false);
+const showRestartConfirm = ref(false);
 const qrDataUrl = ref<string | null>(null);
 const showQr = ref(false);
 
@@ -60,6 +62,15 @@ function handleUpgrade() {
 function confirmUpgrade() {
   showUpgradeConfirm.value = false;
   startUpgrade();
+}
+
+function handleRestart() {
+  showRestartConfirm.value = true;
+}
+
+function confirmRestart() {
+  showRestartConfirm.value = false;
+  restartServer();
 }
 </script>
 
@@ -135,6 +146,21 @@ function confirmUpgrade() {
     </div>
 
     <Setting
+      name="Restart Server"
+      description="Restart the Attaché server"
+    >
+      <Button
+        variant="secondary"
+        size="sm"
+        class="flex items-center justify-center gap-2"
+        @click="handleRestart"
+      >
+        <RotateCw :size="16" />
+        Restart
+      </Button>
+    </Setting>
+
+    <Setting
       name="Sign Out"
       description="Log out of your account on this device"
     >
@@ -158,5 +184,14 @@ function confirmUpgrade() {
     confirm-text="Update"
     @confirm="confirmUpgrade"
     @cancel="showUpgradeConfirm = false"
+  />
+
+  <ConfirmDialog
+    :show="showRestartConfirm"
+    title="Restart Server"
+    message="Restart the Attaché server? Active sessions will be interrupted."
+    confirm-text="Restart"
+    @confirm="confirmRestart"
+    @cancel="showRestartConfirm = false"
   />
 </template>

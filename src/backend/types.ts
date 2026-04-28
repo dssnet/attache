@@ -34,6 +34,7 @@ export type ClientMessage =
   | { type: "clear_agents" }
   | { type: "send_to_agent"; agentId: string; message: string }
   | { type: "get_mcp_status" }
+  | { type: "reload_mcp" }
   | { type: "remove_queued"; timestamp: number }
   | { type: "compact_context" }
   | { type: "subscribe_agent"; agentId: string }

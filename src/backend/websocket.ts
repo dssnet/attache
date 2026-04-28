@@ -157,7 +157,7 @@ async function streamAndBroadcast(config: Config, aiMessage: string) {
 /**
  * Processes messages from the queue one at a time
  */
-async function processMessageQueue(config: Config) {
+async function processMessageQueue() {
   if (isProcessingMessage || messageQueue.length === 0) {
     return;
   }
@@ -172,6 +172,9 @@ async function processMessageQueue(config: Config) {
     }
 
     broadcastQueueUpdate();
+
+    // Load fresh config so settings changes (provider, keys, model, etc.) take effect immediately
+    const config = loadConfig();
 
     // Auto-compact if context is approaching token limit
     const providerName = config.models.default;
@@ -232,7 +235,7 @@ async function processMessageQueue(config: Config) {
 
     // Process next message in queue if any
     if (messageQueue.length > 0) {
-      processMessageQueue(config);
+      processMessageQueue();
     }
   }
 }
@@ -276,8 +279,7 @@ setAgentEventCallback({
       agentId,
     });
     // Process the queue
-    const config = loadConfig();
-    processMessageQueue(config);
+    processMessageQueue();
   },
 });
 
@@ -433,7 +435,7 @@ async function handleClientMessage(
       broadcastQueueUpdate();
 
       // Process the queue (will only start if not already processing)
-      processMessageQueue(config);
+      processMessageQueue();
       break;
     }
 
@@ -546,6 +548,26 @@ async function handleClientMessage(
       break;
     }
 
+    case "reload_mcp": {
+      try {
+        const { mcpManager } = await import("./mcp.ts");
+        const currentConfig = loadConfig();
+        await mcpManager.reinitialize(currentConfig.mcpServers || {});
+        sendToClient(ws, {
+          type: "mcp_status",
+          servers: mcpManager.getStatus(),
+        });
+      } catch (error) {
+        console.error("MCP reload error:", error);
+        sendToClient(ws, {
+          type: "error",
+          error:
+            error instanceof Error ? error.message : "Failed to reload MCP servers",
+        });
+      }
+      break;
+    }
+
     case "remove_queued": {
       const idx = messageQueue.findIndex(
         (msg) => !msg.isFromAgent && msg.timestamp === message.timestamp,
@@ -559,7 +581,7 @@ async function handleClientMessage(
 
     case "compact_context": {
       try {
-        await performCompact(config);
+        await performCompact(loadConfig());
       } catch (error) {
         console.error("Compact error:", error);
         sendToClient(ws, {

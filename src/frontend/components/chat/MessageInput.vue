@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from "vue";
-import { Send } from "lucide-vue-next";
+import { Send, Square } from "lucide-vue-next";
 import { useSlashCommands } from "../../composables/useSlashCommands";
 import ContextIndicator from "../common/ContextIndicator.vue";
 
@@ -8,10 +8,12 @@ defineProps<{
   placeholder?: string;
   variant?: "default" | "empty-state";
   contextPercent?: number;
+  isGenerating?: boolean;
 }>();
 
 const emit = defineEmits<{
   submit: [message: string];
+  stop: [];
 }>();
 
 const message = defineModel<string>({ required: true });
@@ -212,6 +214,16 @@ defineExpose({ inputElement });
           :percent="contextPercent"
         />
         <button
+          v-if="isGenerating"
+          type="button"
+          aria-label="Stop generating"
+          class="w-10 h-10 rounded-full border-none cursor-pointer flex items-center justify-center transition-all duration-200 bg-button-inverse text-button-inverse-text hover:bg-button-inverse-hover"
+          @click="emit('stop')"
+        >
+          <Square :size="14" fill="currentColor" />
+        </button>
+        <button
+          v-else
           type="submit"
           :disabled="!message.trim()"
           class="w-10 h-10 rounded-full border-none cursor-pointer flex items-center justify-center transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed bg-button-inverse text-button-inverse-text [html:not(.is-mobile)_&:hover:not(:disabled)]:bg-button-inverse-hover"

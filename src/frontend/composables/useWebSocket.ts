@@ -18,6 +18,7 @@ type ClientMessage =
   | { type: "get_config" }
   | { type: "update_config"; config: Partial<Config> }
   | { type: "get_mcp_status" }
+  | { type: "reload_mcp" }
   | { type: "remove_queued"; timestamp: number }
   | { type: "compact_context" }
   | { type: "subscribe_agent"; agentId: string }
@@ -25,7 +26,8 @@ type ClientMessage =
   | { type: "stop_generation" }
   | { type: "kill_agent"; agentId: string }
   | { type: "check_update" }
-  | { type: "start_upgrade" };
+  | { type: "start_upgrade" }
+  | { type: "restart_server" };
 
 export interface AgentDisplayMessage {
   type: "thinking" | "tool_call" | "send_to_main" | "user_message" | "system";
@@ -113,6 +115,7 @@ export function useWebSocket() {
   const mcpStatus = ref<
     Array<{ name: string; status: string; toolCount: number; error?: string }>
   >([]);
+  const mcpReloading = ref(false);
   const updateAvailable = ref(false);
   const latestVersion = ref<string | null>(null);
   const upgrading = ref(false);
@@ -351,6 +354,7 @@ export function useWebSocket() {
 
       case "mcp_status":
         mcpStatus.value = message.servers;
+        mcpReloading.value = false;
         break;
 
       case "compact_start":
@@ -445,6 +449,11 @@ export function useWebSocket() {
     send({ type: "get_mcp_status" });
   }
 
+  function reloadMcp() {
+    mcpReloading.value = true;
+    send({ type: "reload_mcp" });
+  }
+
   function removeQueuedMessage(timestamp: number) {
     send({ type: "remove_queued", timestamp });
   }
@@ -514,6 +523,7 @@ export function useWebSocket() {
     config,
     configSaving,
     mcpStatus,
+    mcpReloading,
     connect,
     sendMessage,
     clearContext,
@@ -522,6 +532,7 @@ export function useWebSocket() {
     getConfig,
     updateConfig,
     getMcpStatus,
+    reloadMcp,
     removeQueuedMessage,
     compactContext,
     subscribeAgent,

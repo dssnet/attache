@@ -72,6 +72,7 @@ export interface ConfigContext {
   config: Ref<Config | null>;
   configSaving: Ref<boolean>;
   mcpStatus: Ref<McpStatusItem[]>;
+  mcpReloading: Ref<boolean>;
   updateAvailable: Ref<boolean>;
   latestVersion: Ref<string | null>;
   upgrading: Ref<boolean>;
@@ -79,6 +80,7 @@ export interface ConfigContext {
   getConfig: () => void;
   updateConfig: (partial: Partial<Config>) => void;
   getMcpStatus: () => void;
+  reloadMcp: () => void;
   restartServer: () => void;
   checkingUpdate: Ref<boolean>;
   checkUpdate: () => void;
