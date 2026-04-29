@@ -372,10 +372,16 @@ html:not(.is-mobile) .markdown-content :deep(a:hover) {
   margin: 1em 0;
 }
 
+.markdown-content :deep(.table-wrapper) {
+  margin: 0.5em 0;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
 .markdown-content :deep(table) {
   border-collapse: collapse;
   width: 100%;
-  margin: 0.5em 0;
+  margin: 0;
 }
 
 .markdown-content :deep(th),

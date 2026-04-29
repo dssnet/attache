@@ -136,7 +136,7 @@ const emit = defineEmits<{
           icon
           size="sm"
           variant="secondary"
-          class="absolute bottom-24 left-1/2 -translate-x-1/2 shadow-md rounded-full! z-20"
+          class="absolute bottom-28 left-1/2 -translate-x-1/2 shadow-md rounded-full! z-20"
           @click="chatMessagesRef?.scrollToBottom()"
         >
           <ArrowDown :size="16" />
@@ -159,7 +159,10 @@ const emit = defineEmits<{
       message="Are you sure you want to clear the chat history?"
       confirm-text="Clear"
       variant="danger"
-      @confirm="showClearConfirm = false; emit('clear-context')"
+      @confirm="
+        showClearConfirm = false;
+        emit('clear-context');
+      "
       @cancel="showClearConfirm = false"
     />
   </div>

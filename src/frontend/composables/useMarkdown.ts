@@ -31,9 +31,15 @@ function addCodeBlockWrapper(md: MarkdownIt) {
   };
 }
 
+function addTableWrapper(md: MarkdownIt) {
+  md.renderer.rules.table_open = () => '<div class="table-wrapper"><table>';
+  md.renderer.rules.table_close = () => "</table></div>";
+}
+
 function createMd() {
   const instance = new MarkdownIt({ breaks: true });
   addCodeBlockWrapper(instance);
+  addTableWrapper(instance);
   return instance;
 }
 
@@ -47,6 +53,7 @@ async function initShiki() {
     langs: LANGS,
   }));
   addCodeBlockWrapper(instance);
+  addTableWrapper(instance);
   md.value = instance;
 }
 

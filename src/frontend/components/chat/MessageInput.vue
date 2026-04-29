@@ -217,15 +217,17 @@ defineExpose({ inputElement });
           v-if="isGenerating"
           type="button"
           aria-label="Stop generating"
-          class="w-10 h-10 rounded-full border-none cursor-pointer flex items-center justify-center transition-all duration-200 bg-button-inverse text-button-inverse-text hover:bg-button-inverse-hover"
+          title="Stop generating"
+          class="w-10 h-10 rounded-full border-none cursor-pointer flex items-center justify-center transition-all duration-200 bg-bg-hover text-text-primary hover:bg-border-primary"
           @click="emit('stop')"
         >
           <Square :size="14" fill="currentColor" />
         </button>
         <button
-          v-else
           type="submit"
           :disabled="!message.trim()"
+          :title="isGenerating ? 'Queue message' : 'Send message'"
+          :aria-label="isGenerating ? 'Queue message' : 'Send message'"
           class="w-10 h-10 rounded-full border-none cursor-pointer flex items-center justify-center transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed bg-button-inverse text-button-inverse-text [html:not(.is-mobile)_&:hover:not(:disabled)]:bg-button-inverse-hover"
         >
           <Send :size="16" />

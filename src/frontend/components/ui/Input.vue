@@ -49,7 +49,8 @@ const rightPaddingClasses = computed(() => {
 </script>
 
 <template>
-  <div class="relative flex items-center w-full">
+  <div class="w-full">
+    <div class="relative flex items-center w-full">
       <span
         v-if="$slots.left"
         class="absolute left-3 text-text-secondary pointer-events-none"
@@ -89,4 +90,5 @@ const rightPaddingClasses = computed(() => {
       </span>
     </div>
     <span v-if="error" class="text-xs text-red-500">{{ error }}</span>
+  </div>
 </template>
